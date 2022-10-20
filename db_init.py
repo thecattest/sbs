@@ -2,7 +2,7 @@ from data import db_session
 import sqlalchemy as sa
 from data.__all_models import *
 
-from data.types import MYSQL, SQLITE
+from data.db_types import MYSQL, SQLITE
 
 # TYPE = MYSQL
 TYPE = SQLITE

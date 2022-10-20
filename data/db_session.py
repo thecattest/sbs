@@ -3,7 +3,7 @@ import sqlalchemy.orm as orm
 from sqlalchemy.orm import Session
 import sqlalchemy.ext.declarative as dec
 
-from data.types import MYSQL, SQLITE
+from data.db_types import MYSQL, SQLITE
 
 SqlAlchemyBase = dec.declarative_base()
 

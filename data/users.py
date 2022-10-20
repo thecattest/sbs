@@ -9,8 +9,8 @@ from random import randrange
 
 class User(SqlAlchemyBase, UserMixin, SerializerMixin):
     __tablename__ = 'users'
-    ROLE_CLIENT = 1
-    ROLE_ADMIN = 2
+    ROLE_CLIENT = 0
+    ROLE_ADMIN = 1
 
     id = sqlalchemy.Column(sqlalchemy.Integer,
                            primary_key=True, autoincrement=True)
@@ -19,9 +19,12 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
     sms_code_valid_thru = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)
     role = sqlalchemy.Column(sqlalchemy.Integer, unique=False, nullable=True, default=ROLE_CLIENT)
 
+    registrations = orm.relation("Registration", back_populates="user")
+
     @staticmethod
     def generate_sms_code():
-        return randrange(1111, 10000)
+        # return randrange(1111, 10000)
+        return 1234
 
     def is_client(self):
         return self.role == self.ROLE_CLIENT
