@@ -15,11 +15,12 @@ def check_user_is_authenticated(decorating_func):
 
 @api_blueprint.route('/api/something/<int:some_id>', methods=['GET'])
 @check_user_is_authenticated
-def get_something():
+def get_something(some_id):
     db = db_session.create_session()
     # do something
     response = {
-        'some': 'thing'
+        'some': 'thing',
+        'id': some_id
     }
     db.close()
     return make_response(jsonify(response), 200)
