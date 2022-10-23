@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Календарь мероприятий</title>
+    <link rel="stylesheet" href="frontend/css/bootstrap.min.css">
+    <link rel="stylesheet" href="frontend/css/style.css">
+    <script src="frontend/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+<!--    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>-->
+</head>
+<body>
+    <div class="container mt-4">
+        <h2 class="my-3 mx-2">Календарь мероприятий</h2>
+        <div class="container d-flex justify-content-center" id="app">
+          <div class="d-flex flex-column">
+            <calendar :select="select" @step="step" :year="year" :month="month"
+              :days="days" :constants="constants"
+            ></calendar>
+            <exam-list
+              :day="activeDay" :exams="activeExams" :month="month" :constants="constants"
+            ></exam-list>
+          </div>
+        </div>
+    </div>
+</body>
+</html>
+
+<script>
+  Vue.component('calendar-day', {
+    props: {
+      day: Number,
+      active: Boolean,
+      disabled: Boolean,
+      exams: Array,
+      constants: Object
+    },
+    data: function() {
+      return {
+
+      }
+    },
+    template: `
+      <div
+        @click='select' :id='day'
+        class='day d-flex flex-column align-items-center justify-content-start'
+        :class="{active: active && !disabled, disabled: disabled, clickable: clickable}"
+      >
+        <span>{{day}}</span>
+        <div v-if="!disabled" class="dots d-flex">
+          <div v-for="c in Object.keys(constants)" class="dot" :class="dotClass(c)"></div>
+        </div>
+      </div>
+    `,
+    methods: {
+      select: function() {
+        if (!this.clickable) return;
+        this.$emit('select', this.day);
+      },
+      dotClass: function(id) {
+        classStr = "exam"+Object.keys(this.constants).indexOf(id);
+        e = this.exams.filter(exam => exam.type_id == id);
+        if (!e.length) classStr += ' d-none';
+        placesFree = e.map(a => a.places_free).reduce((a, b) => a + b, 0);
+        if (!placesFree) classStr += ' no-places';
+        return classStr;
+      }
+    },
+    computed: {
+      clickable: function() {
+        return !this.disabled && this.exams.length;
+      }
+    }
+  });
+
+  Vue.component('calendar', {
+    props: {
+      year: Number,
+      month: Number,
+      days: Object,
+      constants: Object,
+      select: Function
+    },
+    data: function() {
+      return {
+        months: [
+          'Январь', 'Февраль', 'Март', 'Апрель',
+          'Май', 'Июнь', 'Июль', 'Август',
+          'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+        ]
+      }
+    },
+    template: `
+      <div class="calendar card d-flex flex-column my-3">
+        <div class="calendar-header-container d-flex justify-content-center mb-2">
+          <div class="calendar-header d-flex align-items-center">
+            <div class="calendar-month-dec mx-3" @click="dec" ></div>
+            <div class="calendar-title">{{ months[month] }} {{ year }}</div>
+            <div class="calendar-month-inc mx-3" @click="inc"></div>
+          </div>
+        </div>
+        <div class="calendar-body-container">
+          <div class="calendar-week d-flex">
+            <div
+              v-for="(d, i) in ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']"
+              class='day week-day d-flex align-items-center justify-content-center'
+            >
+              <span>{{ d }}</span>
+            </div>
+          </div>
+          <div class="calendar-week d-flex" v-for="(week, wi) in layout" :key="wi">
+            <calendar-day v-for="(d, di) in week" :key="di"
+              @select="select"
+              :day="d.day" :active="d.active" :disabled="d.disabled"
+              :exams="d.exams" :constants="constants"
+            ></calendar-day>
+          </div>
+        </div>
+      </div>
+    `,
+    methods: {
+      dec: function() { this.$emit("step", -1); },
+      inc: function() { this.$emit("step", 1); }
+    },
+    computed: {
+      layout: function() {
+        firstDay = new Date(this.year, this.month);
+        // первый день в первой неделе текущего календаря
+        currentDay = firstDay;
+        currentDay.setDate(firstDay.getDate() - firstDay.getUTCDay());
+        lastDay = currentDay;
+        layout = [];
+        flag = true;
+        while (flag) {
+          week = [];
+          for (i = 0; i<7; i++) {
+            d = new Date(currentDay.getTime());
+            dayN = d.getDate();
+            day = {
+              day: dayN,
+              active: dayN in this.days ? this.days[dayN].active : false,
+              exams: dayN in this.days ? this.days[dayN].exams : [],
+              disabled: d.getMonth() !== this.month
+            }
+            week.push(day);
+            currentDay.setDate(currentDay.getDate() + 1);
+          }
+          layout.push(week);
+          flag = currentDay.getMonth() == this.month;
+        }
+        console.log(layout);
+        return layout;
+      }
+    }
+  });
+
+  Vue.component('filters', {
+    props: {
+      constants: Array,
+      selected: Object
+    },
+    template: `
+      <div class="card filters">
+
+      </div>
+    `
+  });
+
+  Vue.component('exam-list-item', {
+    props: {
+      exam: Object,
+      constants: Object
+    },
+    data: function() {
+      return {
+        months: [
+          'января', 'февраля', 'марта', 'апреля',
+          'май', 'июня', 'июля', 'августа',
+          'сентября', 'октября', 'ноября', 'декабря',
+        ],
+        d: new Date(this.exam.datetime)
+      }
+    },
+    template: `
+      <div class="exam-list-item">
+        <div class="exam-list-item-header">
+          <span class="tag" :class="tagClass">{{ constants[exam.type_id].title }}</span>
+          {{constants[exam.type_id].subjects[exam.subject_id]}}
+        </div>
+        <div class="exam-list-item-body">
+          {{ d.getUTCHours() }}:{{ String(d.getUTCMinutes()).padStart(2, '0') }}, {{ exam.price }}₽
+        </div>
+        <div class="exam-list-item-footer d-flex justify-content-end">
+        <div class="btn-group">
+          <button type="button" class="btn btn-sm btn-primary" :class="{disabled: this.exam.places_free == 0}">Записаться</button>
+          <button type="button" class="btn btn-sm btn-primary-outline disabled">
+            {{exam.places - exam.places_free}}/{{exam.places}}
+          </button>
+        </div>
+        </div>
+      </div>
+    `,
+    methods: {
+
+    },
+    computed: {
+      tagClass: function() {
+        console.log(this.exam.type_id);
+        console.log(Object.keys(this.constants));
+        return "exam"+Object.keys(this.constants).indexOf(String(this.exam.type_id));
+      }
+    }
+  });
+
+  Vue.component('exam-list', {
+    props: {
+      day: Number,
+      month: Number,
+      exams: Array,
+      constants: Object
+    },
+    data: function() {
+      return {
+        months: [
+          'января', 'февраля', 'марта', 'апреля',
+          'май', 'июня', 'июля', 'августа',
+          'сентября', 'октября', 'ноября', 'декабря',
+        ]
+      }
+    },
+    template: `
+      <div class="exam-list card">
+        <div class="exam-list-header" :class="day === -1 ? 'msg' : ''">
+          <template v-if="day !== -1">
+            {{ day }} {{ months[month] }}
+          </template>
+          <template v-else>
+            Выберите день
+          </template>
+        </div>
+        <div class="exam-list-body">
+          <exam-list-item
+            v-for="(e, i) in exams" :key="i" :exam="e" :constants="constants"
+          ></exam-list-item>
+        </div>
+      </div>
+    `,
+    methods: {
+
+    }
+  });
+
+  app = new Vue({
+    el: "#app",
+    data: {
+      year: 0,
+      month: 0,
+      days: {},
+      constants: []
+    },
+    methods: {
+      select: function(dayN) {
+        for (const [key, value] of Object.entries(this.days))
+          this.days[key].active = key == dayN;
+      },
+      step: function(s) {
+        m = this.month += s;
+        if (m === 12) {
+          this.year += 1;
+          m = 0;
+        }
+        if (m === -1) {
+          this.year -= 1;
+          m = 11;
+        }
+        this.month = m;
+        this.days = this.getDays();
+      },
+      getConstants: function() {
+        return {
+          1: {
+            title: 'ЕГЭ',
+            subjects: {
+              1: 'Математика профиль',
+              2: 'Математика база',
+              3: 'Русский язык',
+            }
+          },
+          2: {
+            title: 'ОГЭ',
+            subjects: {
+              20: 'Математика',
+              21: 'Русский язык',
+              22: 'Биология',
+              23: 'Физика'
+            }
+          },
+        }
+      },
+      getDays: function() {
+        return {
+          8: {
+            active: false,
+            exams: [
+              {
+                type_id: 1,
+                subject_id: 1,
+                datetime: 1666530559276,
+                places: 60,
+                places_free: 0,
+                price: 350
+              }
+            ]
+          },
+          23: {
+            active: false,
+            exams: [
+              {
+                type_id: 1,
+                subject_id: 2,
+                datetime: 1666530559276,
+                places: 30,
+                places_free: 20,
+                price: 300
+              },
+              {
+                type_id: 1,
+                subject_id: 3,
+                datetime: 1666530559276,
+                places: 30,
+                places_free: 10,
+                price: 300
+              }
+            ]
+          },
+          28: {
+            active: false,
+            exams: [
+              {
+                type_id: 2,
+                subject_id: 22,
+                datetime: 1666530559276,
+                places: 30,
+                places_free: 20,
+                price: 300
+              },
+              {
+                type_id: 2,
+                subject_id: 23,
+                datetime: 1666530559276,
+                places: 30,
+                places_free: 11,
+                price: 300
+              },
+              {
+                type_id: 2,
+                subject_id: 21,
+                datetime: 1666530559276,
+                places: 30,
+                places_free: 8,
+                price: 300
+              }
+            ]
+          },
+          13: {
+            active: false,
+            exams: [
+              {
+                type_id: 1,
+                subject_id: 1,
+                datetime: 1666530559276,
+                places: 30,
+                places_free: 20,
+                price: 300
+              },
+              {
+                type_id: 2,
+                subject_id: 23,
+                datetime: 1666530559276,
+                places: 30,
+                places_free: 10,
+                price: 300
+              }
+            ]
+          },
+          18: {
+            active: false,
+            exams: [
+              {
+                type_id: 2,
+                subject_id: 22,
+                datetime: 1666530559276,
+                places: 15,
+                places_free: 0,
+                price: 250
+              },
+              {
+                type_id: 1,
+                subject_id: 3,
+                datetime: 1666530559276,
+                places: 30,
+                places_free: 10,
+                price: 300
+              }
+            ]
+          },
+          24: {
+            active: false,
+            exams: [
+              {
+                type_id: 2,
+                subject_id: 20,
+                datetime: 1666530559276,
+                places: 15,
+                places_free: 5,
+                price: 250
+              },
+              {
+                type_id: 1,
+                subject_id: 3,
+                datetime: 1666530559276,
+                places: 30,
+                places_free: 0,
+                price: 300
+              }
+            ]
+          }
+        }
+      }
+    },
+    computed: {
+      activeExams: function() {
+        day = this.activeDay;
+        if (day === -1) return []
+        return this.days[day].exams;
+      },
+      activeDay: function() {
+        for (const [key, value] of Object.entries(this.days))
+          if (this.days[key].active)
+            return Number(key);
+        return -1;
+      }
+    },
+    created() {
+      d = new Date();
+      this.year = d.getFullYear();
+      this.month = d.getMonth();
+      this.constants = this.getConstants();
+      // this.constants.sort((a, b) => a.id - b.id);
+      this.days = this.getDays();
+    }
+  });
+</script>

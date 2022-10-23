@@ -1,18 +1,29 @@
-from flask import Blueprint, jsonify, make_response, abort, redirect, request
-from db_init import *
-from flask_login import login_user, login_required, logout_user, current_user
-from utils import send_html
+from flask import Blueprint, redirect, send_file, send_from_directory
+from flask_login import login_required, logout_user
 
-pages_blueprint = Blueprint('pages', __name__)
+
+FRONTEND = 'frontend'
+pages_blueprint = Blueprint('pages', __name__, template_folder=FRONTEND)
+
+
+@pages_blueprint.route(f'/{FRONTEND}/<path:path>')
+def send_static(path):
+    return send_from_directory(FRONTEND, path)
 
 
 @pages_blueprint.route('/')
 def page_index():
-    return send_html('index.html')
+    return redirect('/calendar')
+
+
+@pages_blueprint.route('/calendar')
+def calendar():
+    return send_from_directory(FRONTEND, 'calendar.html')
+
 
 @pages_blueprint.route('/login')
 def page_login():
-    return send_html('login.html')
+    return send_from_directory(FRONTEND, 'login.html')
 
 
 @pages_blueprint.route('/logout')
