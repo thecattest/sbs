@@ -13,7 +13,7 @@ class Subject(SqlAlchemyBase, SerializerMixin):
     title = sqlalchemy.Column(sqlalchemy.String, nullable=False)
 
     type = orm.relation("Type")
-    exams = orm.relation("Exam", back_populates="subject")
+    #exams = orm.relation("Exam", back_populates="subject")
 
     def __repr__(self):
         return f"<Subject {self.id} {self.type_id} {self.title}>"

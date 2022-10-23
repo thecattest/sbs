@@ -18,6 +18,7 @@ def check_user_is_authenticated(decorating_func):
 
     return decorated_func
 
+
 @api_blueprint.route('/api/something/<int:some_id>', methods=['GET'])
 @check_user_is_authenticated
 def get_something(some_id):
@@ -85,3 +86,33 @@ def make_login():
     login_user(exist_user, True)
     session.close()
     return make_response(jsonify({'ok': 'true'}), 204)
+
+
+@api_blueprint.route('/api/exams/<int:year_n>/<int:month_n>', methods=['GET'])
+def get_exams_by_month(year_n, month_n):
+    if month_n not in range(0, 12):
+        return make_response(jsonify({'error': 'month does not exist'}), 400)
+
+    response = dict()
+    session = db_session.create_session()
+    start_time, end_time = get_first_and_last_month_day(year_n, month_n)
+    exams = session.query(Exam).filter(Exam.date >= start_time, Exam.date <= end_time).all()
+    exams_resp = dict()
+    for i in exams:
+        exam: Exam = i
+        exam_day = exam.date.day
+        resp = dict()
+        resp['id'] = exam.id
+        resp['title'] = exam.type.title
+        subjects = {}
+        for sub in exam.get_subjects():
+            subjects[sub] = session.query(Subject).filter(Subject.id==sub).first().title
+        resp['subjects'] = subjects
+        if exam_day in exams_resp:
+            exams_resp[exam_day].append(resp)
+        else:
+            exams_resp[exam_day] = [resp]
+        response['exams'] = exams_resp
+        response['user_role'] = current_user.role
+        return make_response(response, 200)
+
