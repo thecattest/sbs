@@ -7,7 +7,7 @@ from flask_login import UserMixin
 from random import randrange
 
 
-class User(SqlAlchemyBase, UserMixin, SerializerMixin):
+class User(UserMixin, SqlAlchemyBase, SerializerMixin):
     __tablename__ = 'users'
     ROLE_CLIENT = 0
     ROLE_ADMIN = 1
@@ -31,6 +31,7 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
 
     def is_admin(self):
         return self.role == self.ROLE_ADMIN
+
 
     def __repr__(self):
         return f"<User {self.id} {self.phone} {self.role}>"

@@ -2,8 +2,8 @@ import re
 from random import randint
 from datetime import datetime
 
-NUM_CHECK = re.compile(r".*(\d).*(\d).*(\d).*(\d).*(\d).*(\d).*(\d).*(\d).*(\d).*(\d).*")
-NUM_F = re.compile(r'((\+7|7|8)+([0-9]){10})$')
+NUM_F = re.compile(r".*(\d).*(\d).*(\d).*(\d).*(\d).*(\d).*(\d).*(\d).*(\d).*(\d).*")
+NUM_CHECK = re.compile(r'((\+7|7|8)+([0-9]){10})$')
 
 
 def format_phone_number(number):
@@ -16,6 +16,7 @@ def check_phone_number(number):
 
 def generate_sms_code():
     code = randint(1000, 9999)
+    code = 1234
     return code
 
 

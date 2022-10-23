@@ -16,7 +16,7 @@ db.add(s)
 db.commit()
 
 u = User()
-u.phone = '+79001003040'
+u.phone = '+79001003041'
 u.role = u.ROLE_ADMIN
 db.add(u)
 db.commit()
@@ -44,3 +44,4 @@ print(e)
 print(e.registrations)
 print(r)
 print(r.exam, r.user)
+db.close()

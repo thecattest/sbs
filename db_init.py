@@ -21,7 +21,7 @@ def connect(type):
             db_session.global_init(db_path, TYPE, username, password)
 
     def sqlite():
-        db_dir = "db"
+        db_dir = r"D:\sbs\data\db"
         import os
         db_path = os.path.join(db_dir, 'exam_center.sqlite')
         if not os.path.exists(db_dir):
