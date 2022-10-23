@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="frontend/css/style.css">
     <script src="frontend/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 <!--    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>-->
 </head>
 <body>
@@ -15,8 +16,9 @@
         <h2 class="my-3 mx-2">Календарь мероприятий</h2>
         <div class="container d-flex justify-content-center" id="app">
           <div class="d-flex flex-column">
-            <calendar :select="select" @step="step" :year="year" :month="month"
-              :days="days" :constants="constants"
+            <filters @select-type="selectType" @select-subjects="selectSubjects" :constants="constants"></filters>
+            <calendar :select="selectDay" @step="step" :year="year" :month="month"
+              :days="filteredDays" :constants="constants"
             ></calendar>
             <exam-list
               :day="activeDay" :exams="activeExams" :month="month" :constants="constants"
@@ -93,11 +95,13 @@
     },
     template: `
       <div class="calendar card d-flex flex-column my-3">
-        <div class="calendar-header-container d-flex justify-content-center mb-2">
+        <div class="calendar-header-container mx-3 d-flex justify-content-between">
           <div class="calendar-header d-flex align-items-center">
-            <div class="calendar-month-dec mx-3" @click="dec" ></div>
             <div class="calendar-title">{{ months[month] }} {{ year }}</div>
-            <div class="calendar-month-inc mx-3" @click="inc"></div>
+          </div>
+          <div class="calendar-header-buttons d-flex">
+            <span @click="dec" class="calendar-month-step material-symbols-outlined">arrow_left</span>
+            <span @click="inc" class="calendar-month-step material-symbols-outlined">arrow_right</span>
           </div>
         </div>
         <div class="calendar-body-container">
@@ -149,7 +153,6 @@
           layout.push(week);
           flag = currentDay.getMonth() == this.month;
         }
-        console.log(layout);
         return layout;
       }
     }
@@ -157,14 +160,58 @@
 
   Vue.component('filters', {
     props: {
-      constants: Array,
-      selected: Object
+      constants: Object
+    },
+    data: function() {
+      return {
+        selectedTypeId: -1,
+        selectedSubjects: []
+      }
     },
     template: `
       <div class="card filters">
-
+        <h4>Фильтры</h4>
+        <div class="btn-group">
+          <button @click="selectType(t[1])" type="button" v-for="t in types" :key="t[1]"
+            class="btn btn-sm" :class="typeSelectorClass(t[1])"
+          >
+            {{ t[0] }}
+          </button>
+        </div>
+        <div class="filter-subjects" v-if="selectedTypeId != -1">
+          <div class="form-check" v-for="s in subjects" :key="s[1]">
+            <input class="form-check-input" type="checkbox" :value="s[1]" :id="s[1]" v-model="selectedSubjects" />
+            <label class="form-check-label" :for="s[1]">
+              {{s[0]}}
+            </label>
+          </div>
+        </div>
       </div>
-    `
+    `,
+    methods: {
+      selectType: function(typeId) {
+        this.selectedTypeId = typeId;
+        this.selectedSubjects = [];
+        this.$emit("select-type", typeId);
+      },
+      typeSelectorClass: function(i) {
+        return this.selectedTypeId == i ? "btn-success" : "btn-light";
+      }
+    },
+    computed: {
+      types: function() {
+        return Object.keys(this.constants).map(k => [this.constants[k].title, k]);
+      },
+      subjects: function() {
+        return Object.keys(this.constants[this.selectedTypeId].subjects).map(k => [this.constants[this.selectedTypeId].subjects[k], k])
+      }
+    },
+    watch: {
+      selectedSubjects: function() {
+        console.log(this.selectedSubjects);
+        this.$emit("select-subjects", this.selectedSubjects);
+      }
+    }
   });
 
   Vue.component('exam-list-item', {
@@ -192,14 +239,13 @@
           {{ d.getHours() }}:{{ String(d.getMinutes()).padStart(2, '0') }}, {{ exam.price }}₽
         </div>
         <div class="exam-list-item-footer d-flex justify-content-end">
-        <div class="btn-group">
-          <button type="button" class="btn btn-sm btn-primary"
-            :class="{disabled: this.exam.places_left == 0}"
-          >Записаться</button>
-          <button type="button" class="btn btn-sm btn-primary-outline disabled">
-            {{placesCaption}}
-          </button>
-        </div>
+          <div class="btn-group">
+            <button type="button" v-if="this.exam.places_left" class="btn btn-sm btn-primary"
+            >Записаться</button>
+            <button type="button" class="btn btn-sm btn-primary-outline disabled">
+              {{placesCaption}}
+            </button>
+          </div>
         </div>
       </div>
     `,
@@ -276,10 +322,12 @@
       year: 0,
       month: 0,
       days: {},
-      constants: []
+      constants: [],
+      selectedTypeId: -1,
+      selectedSubjects: []
     },
     methods: {
-      select: function(dayN) {
+      selectDay: function(dayN) {
         for (const [key, value] of Object.entries(this.days))
           this.days[key].active = key == dayN;
       },
@@ -415,6 +463,14 @@
                 price: 250
               },
               {
+                type_id: 2,
+                subject_id: 21,
+                datetime: 1666530559276,
+                places: 15,
+                places_left: 10,
+                price: 250
+              },
+              {
                 type_id: 1,
                 subject_id: 3,
                 datetime: 1666530559276,
@@ -437,7 +493,7 @@
               },
               {
                 type_id: 1,
-                subject_id: 3,
+                subject_id: 2,
                 datetime: 1666530559276,
                 places: 30,
                 places_left: 0,
@@ -446,19 +502,45 @@
             ]
           }
         }
+      },
+      selectType: function(typeId) {
+        this.selectedTypeId = typeId;
+        if (!this.activeExams.length)
+          this.selectDay(-1);
+      },
+      selectSubjects: function(subjects) {
+        this.selectedSubjects = subjects;
+        if (!this.activeExams.length)
+          this.selectDay(-1);
       }
     },
     computed: {
       activeExams: function() {
         day = this.activeDay;
         if (day === -1) return []
-        return this.days[day].exams;
+        return this.filteredDays[day].exams;
       },
       activeDay: function() {
-        for (const [key, value] of Object.entries(this.days))
-          if (this.days[key].active)
+        for (const [key, value] of Object.entries(this.filteredDays))
+          if (this.filteredDays[key].active)
             return Number(key);
         return -1;
+      },
+      filteredDays: function() {
+        filtered = {};
+        Object.keys(this.days).forEach(key => {
+          day = this.days[key];
+          if (key == 24)
+            console.log(this.selectedSubjects, day.exams);
+          filtered[key] = {
+            active: day.active,
+            exams: day.exams.filter(
+              e => e.type_id == this.selectedTypeId &&
+                (this.selectedSubjects.indexOf(String(e.subject_id)) != -1 || !this.selectedSubjects.length)
+                || this.selectedTypeId == -1)
+          };
+        });
+        return filtered;
       }
     },
     created() {

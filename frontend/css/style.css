@@ -6,6 +6,14 @@ body {
   background-color: transparent;
 }
 
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 500,
+  'GRAD' 0,
+  'opsz' 40
+}
+
 .day.active {
   background: #ddd;
 }
@@ -55,16 +63,12 @@ body {
   background-color: white;
 }
 
-.calendar-month-inc, .calendar-month-dec {
-  width: 0;
-  height: 0;
-  border: 10px solid transparent;
+.calendar-month-step {
   cursor: pointer;
+  color: #666666;
+  margin: 0 -5px;
 }
-.calendar-month-inc {border-left-color: #D9D9D9;}
-.calendar-month-dec {border-right-color: #D9D9D9;}
-.calendar-month-inc:hover {border-left-color: #808080;}
-.calendar-month-dec:hover {border-right-color: #808080;}
+.calendar-month-step:hover {color: initial;}
 
 .exam-list-header.msg {
   color: #737373;
@@ -76,11 +80,11 @@ body {
 }
 
 .exam-list-item {
-  margin: 15px 0;
+  margin: 10px 0;
 }
 
 .exam-list-item:first-child {
-  margin-top: 20px;
+  margin-top: 15px;
 }
 
 .exam-list-item:last-child {
@@ -109,4 +113,12 @@ body {
 
 .btn {
   border-radius: 8px;
+}
+
+.filters h4 {
+  margin-bottom: 15px;
+}
+
+.filter-subjects {
+  margin-top: 10px;
 }
