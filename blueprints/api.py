@@ -7,7 +7,6 @@ from .settings import *
 from datetime import datetime
 from datetime import timedelta
 
-NUM_RE = re.compile(r'((\+7|7|8)+([0-9]){10})$')
 api_blueprint = Blueprint('api', __name__)
 
 
