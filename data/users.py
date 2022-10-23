@@ -14,7 +14,7 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
 
     id = sqlalchemy.Column(sqlalchemy.Integer,
                            primary_key=True, autoincrement=True)
-    phone = sqlalchemy.Column(sqlalchemy.String(13), unique=True, nullable=False)
+    phone = sqlalchemy.Column(sqlalchemy.Integer, unique=True, nullable=False)
     sms_code = sqlalchemy.Column(sqlalchemy.Integer, nullable=True)
     sms_code_valid_thru = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)
     role = sqlalchemy.Column(sqlalchemy.Integer, unique=False, nullable=True, default=ROLE_CLIENT)
