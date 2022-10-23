@@ -62,8 +62,8 @@
         classStr = "exam"+Object.keys(this.constants).indexOf(id);
         e = this.exams.filter(exam => exam.type_id == id);
         if (!e.length) classStr += ' d-none';
-        placesFree = e.map(a => a.places_free).reduce((a, b) => a + b, 0);
-        if (!placesFree) classStr += ' no-places';
+        placesLeft = e.map(a => a.places_left).reduce((a, b) => a + b, 0);
+        if (!placesLeft) classStr += ' no-places';
         return classStr;
       }
     },
@@ -189,13 +189,15 @@
           {{constants[exam.type_id].subjects[exam.subject_id]}}
         </div>
         <div class="exam-list-item-body">
-          {{ d.getUTCHours() }}:{{ String(d.getUTCMinutes()).padStart(2, '0') }}, {{ exam.price }}₽
+          {{ d.getHours() }}:{{ String(d.getMinutes()).padStart(2, '0') }}, {{ exam.price }}₽
         </div>
         <div class="exam-list-item-footer d-flex justify-content-end">
         <div class="btn-group">
-          <button type="button" class="btn btn-sm btn-primary" :class="{disabled: this.exam.places_free == 0}">Записаться</button>
+          <button type="button" class="btn btn-sm btn-primary"
+            :class="{disabled: this.exam.places_left == 0}"
+          >Записаться</button>
           <button type="button" class="btn btn-sm btn-primary-outline disabled">
-            {{exam.places - exam.places_free}}/{{exam.places}}
+            {{placesCaption}}
           </button>
         </div>
         </div>
@@ -206,9 +208,26 @@
     },
     computed: {
       tagClass: function() {
-        console.log(this.exam.type_id);
-        console.log(Object.keys(this.constants));
         return "exam"+Object.keys(this.constants).indexOf(String(this.exam.type_id));
+      },
+      ending: function() {
+        var n = this.exam.places_left;
+        endings = ['место', 'места', 'мест'];
+        n = n % 100;
+        if (n >= 11 && n <= 19) return endings[2];
+        else {
+          i = n % 10;
+          switch (i) {
+            case (1): return endings[0];
+            case (2):
+            case (3):
+            case (4): return endings[1];
+            default: return endings[2];
+          }
+        }
+      },
+      placesCaption: function() {
+        return this.exam.places_left == 0 ? "мест нет :(" : this.exam.places_left + " " + this.ending;
       }
     }
   });
@@ -308,7 +327,7 @@
                 subject_id: 1,
                 datetime: 1666530559276,
                 places: 60,
-                places_free: 0,
+                places_left: 0,
                 price: 350
               }
             ]
@@ -321,7 +340,7 @@
                 subject_id: 2,
                 datetime: 1666530559276,
                 places: 30,
-                places_free: 20,
+                places_left: 20,
                 price: 300
               },
               {
@@ -329,7 +348,7 @@
                 subject_id: 3,
                 datetime: 1666530559276,
                 places: 30,
-                places_free: 10,
+                places_left: 22,
                 price: 300
               }
             ]
@@ -342,7 +361,7 @@
                 subject_id: 22,
                 datetime: 1666530559276,
                 places: 30,
-                places_free: 20,
+                places_left: 4,
                 price: 300
               },
               {
@@ -350,7 +369,7 @@
                 subject_id: 23,
                 datetime: 1666530559276,
                 places: 30,
-                places_free: 11,
+                places_left: 11,
                 price: 300
               },
               {
@@ -358,7 +377,7 @@
                 subject_id: 21,
                 datetime: 1666530559276,
                 places: 30,
-                places_free: 8,
+                places_left: 21,
                 price: 300
               }
             ]
@@ -371,7 +390,7 @@
                 subject_id: 1,
                 datetime: 1666530559276,
                 places: 30,
-                places_free: 20,
+                places_left: 20,
                 price: 300
               },
               {
@@ -379,7 +398,7 @@
                 subject_id: 23,
                 datetime: 1666530559276,
                 places: 30,
-                places_free: 10,
+                places_left: 10,
                 price: 300
               }
             ]
@@ -392,7 +411,7 @@
                 subject_id: 22,
                 datetime: 1666530559276,
                 places: 15,
-                places_free: 0,
+                places_left: 0,
                 price: 250
               },
               {
@@ -400,7 +419,7 @@
                 subject_id: 3,
                 datetime: 1666530559276,
                 places: 30,
-                places_free: 10,
+                places_left: 10,
                 price: 300
               }
             ]
@@ -413,7 +432,7 @@
                 subject_id: 20,
                 datetime: 1666530559276,
                 places: 15,
-                places_free: 5,
+                places_left: 1,
                 price: 250
               },
               {
@@ -421,7 +440,7 @@
                 subject_id: 3,
                 datetime: 1666530559276,
                 places: 30,
-                places_free: 0,
+                places_left: 0,
                 price: 300
               }
             ]

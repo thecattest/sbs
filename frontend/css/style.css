@@ -45,8 +45,8 @@ body {
   margin: 1px;
 }
 
-.exam0 {background-color: #FF9900;}
-.exam1 {background-color: #B468FF;}
+.dot.exam0 {background-color: #FF9900;}
+.dot.exam1 {background-color: #B468FF;}
 .dot.no-places {background-color: #808080;}
 
 .card {
@@ -103,6 +103,9 @@ body {
   padding: 0 5px;
   border-radius: 8px;
 }
+
+.tag.exam0 {background-color: #ff990080;}
+.tag.exam1 {background-color: #b266ff80;}
 
 .btn {
   border-radius: 8px;
