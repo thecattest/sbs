@@ -14,7 +14,7 @@ def check_user_is_authenticated(decorating_func):
     def decorated_func(*args, **kwargs):
         if not current_user.is_authenticated:
             abort(make_response(jsonify({'error': 'not authenticated'}), 403))
-        decorating_func(*args, **kwargs)
+        return decorating_func(*args, **kwargs)
 
     return decorated_func
 
