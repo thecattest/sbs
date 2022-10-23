@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, make_response, abort, redirect, request
 from db_init import *
-from flask_login import current_user
+from flask_login import current_user, login_user
 import re
 from .methods import *
 from .settings import *
@@ -55,4 +55,36 @@ def generate_auth_code():
     exist_user.sms_code_valid_thru = datetime.utcnow() + timedelta(seconds=SMS_CODE_TIMEOUT)
     session.commit()
     session.close()
+    return make_response(204)
+
+
+@api_blueprint.route('/api/login/', methods=['POST'])
+def make_login():
+    r = request.json
+
+    if 'phone' not in r or 'code' not in r:
+        return make_response(jsonify({'error': 'missing argument'}), 400)
+
+    phone = r['phone']
+    if not check_phone_number(phone):
+        make_response(jsonify({'error': 'invalid number'}), 400)
+
+    phone_f = format_phone_number(phone)
+
+    session = db_session.create_session()
+    exist_user: User = session.query(User).filter(User.phone == phone_f).first()
+
+    if exist_user is None:
+        return make_response(jsonify({'error': 'user does not exist'}), 404)
+
+    code = r['code']
+    if not check_sms_code(User.sms_code, User.sms_code_valid_thru, code):
+        return make_response(jsonify({'error': 'wrong code'}), 403)
+
+    exist_user.sms_code = None
+    exist_user.sms_code_valid_thru = None
+    session.commit()
+    session.close()
+
+    login_user(exist_user)
     return make_response(204)
