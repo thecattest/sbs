@@ -22,6 +22,7 @@ def calendar():
 
 
 
+
 @pages_blueprint.route('/login')
 def page_login():
     return send_from_directory(FRONTEND, 'login.html')
