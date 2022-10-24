@@ -21,7 +21,9 @@
               :days="filteredDays" :constants="constants"
             ></calendar>
             <exam-list
-              :day="activeDay" :exams="activeExams" :month="month" :constants="constants"
+              :enroll="enroll" :sign-out="signOut"
+              :day="activeDay" :exams="activeExams"
+              :month="month" :constants="constants"
             ></exam-list>
           </div>
         </div>
@@ -47,7 +49,10 @@
       <div
         @click='select' :id='day'
         class='day d-flex flex-column align-items-center justify-content-start'
-        :class="{active: active && !disabled, disabled: disabled, clickable: clickable}"
+        :class="{
+          active: active && !disabled, disabled: disabled,
+          clickable: clickable, enrolled: enrolled && !disabled
+        }"
       >
         <span>{{day}}</span>
         <div v-if="!disabled" class="dots d-flex">
@@ -72,6 +77,9 @@
     computed: {
       clickable: function() {
         return !this.disabled && this.exams.length;
+      },
+      enrolled: function() {
+        return this.exams.filter(exam => exam.enrolled).length != 0;
       }
     }
   });
@@ -208,7 +216,6 @@
     },
     watch: {
       selectedSubjects: function() {
-        console.log(this.selectedSubjects);
         this.$emit("select-subjects", this.selectedSubjects);
       }
     }
@@ -240,8 +247,12 @@
         </div>
         <div class="exam-list-item-footer d-flex justify-content-end">
           <div class="btn-group">
-            <button type="button" v-if="this.exam.places_left" class="btn btn-sm btn-primary"
+            <button type="button" v-if="exam.places_left && !exam.enrolled"
+              class="btn btn-sm btn-primary" @click="enroll"
             >Записаться</button>
+            <button type="button" v-else-if="exam.enrolled"
+              class="btn btn-sm btn-danger" @click="signOut"
+            >Отписаться</button>
             <button type="button" class="btn btn-sm btn-primary-outline disabled">
               {{placesCaption}}
             </button>
@@ -250,7 +261,12 @@
       </div>
     `,
     methods: {
-
+      enroll: function() {
+        this.$emit("enroll", this.exam.id)
+      },
+      signOut: function() {
+        this.$emit("sign-out", this.exam.id)
+      }
     },
     computed: {
       tagClass: function() {
@@ -283,7 +299,9 @@
       day: Number,
       month: Number,
       exams: Array,
-      constants: Object
+      constants: Object,
+      enroll: Function,
+      signOut: Function
     },
     data: function() {
       return {
@@ -307,6 +325,7 @@
         <div class="exam-list-body">
           <exam-list-item
             v-for="(e, i) in exams" :key="i" :exam="e" :constants="constants"
+            @enroll="enroll" @sign-out="signOut"
           ></exam-list-item>
         </div>
       </div>
@@ -371,12 +390,14 @@
             active: false,
             exams: [
               {
+                id: 1,
                 type_id: 1,
                 subject_id: 1,
                 datetime: 1666530559276,
                 places: 60,
                 places_left: 0,
-                price: 350
+                price: 350,
+                enrolled: false,
               }
             ]
           },
@@ -384,20 +405,24 @@
             active: false,
             exams: [
               {
+                id: 2,
                 type_id: 1,
                 subject_id: 2,
                 datetime: 1666530559276,
                 places: 30,
                 places_left: 20,
-                price: 300
+                price: 300,
+                enrolled: false,
               },
               {
+                id: 3,
                 type_id: 1,
                 subject_id: 3,
                 datetime: 1666530559276,
                 places: 30,
                 places_left: 22,
-                price: 300
+                price: 300,
+                enrolled: false,
               }
             ]
           },
@@ -405,28 +430,34 @@
             active: false,
             exams: [
               {
+                id: 4,
                 type_id: 2,
                 subject_id: 22,
                 datetime: 1666530559276,
                 places: 30,
                 places_left: 4,
-                price: 300
+                price: 300,
+                enrolled: true,
               },
               {
+                id: 5,
                 type_id: 2,
                 subject_id: 23,
                 datetime: 1666530559276,
                 places: 30,
                 places_left: 11,
-                price: 300
+                price: 300,
+                enrolled: false,
               },
               {
+                id: 6,
                 type_id: 2,
                 subject_id: 21,
                 datetime: 1666530559276,
                 places: 30,
                 places_left: 21,
-                price: 300
+                price: 300,
+                enrolled: false,
               }
             ]
           },
@@ -434,20 +465,24 @@
             active: false,
             exams: [
               {
+                id: 7,
                 type_id: 1,
                 subject_id: 1,
                 datetime: 1666530559276,
                 places: 30,
                 places_left: 20,
-                price: 300
+                price: 300,
+                enrolled: false,
               },
               {
+                id: 8,
                 type_id: 2,
                 subject_id: 23,
                 datetime: 1666530559276,
                 places: 30,
                 places_left: 10,
-                price: 300
+                price: 300,
+                enrolled: true,
               }
             ]
           },
@@ -455,28 +490,34 @@
             active: false,
             exams: [
               {
+                id: 9,
                 type_id: 2,
                 subject_id: 22,
                 datetime: 1666530559276,
                 places: 15,
                 places_left: 0,
-                price: 250
+                price: 250,
+                enrolled: false,
               },
               {
+                id: 10,
                 type_id: 2,
                 subject_id: 21,
                 datetime: 1666530559276,
                 places: 15,
                 places_left: 10,
-                price: 250
+                price: 250,
+                enrolled: false,
               },
               {
+                id: 11,
                 type_id: 1,
                 subject_id: 3,
                 datetime: 1666530559276,
                 places: 30,
                 places_left: 10,
-                price: 300
+                price: 300,
+                enrolled: false,
               }
             ]
           },
@@ -484,20 +525,24 @@
             active: false,
             exams: [
               {
+                id: 12,
                 type_id: 2,
                 subject_id: 20,
                 datetime: 1666530559276,
                 places: 15,
                 places_left: 1,
-                price: 250
+                price: 250,
+                enrolled: false,
               },
               {
+                id: 13,
                 type_id: 1,
                 subject_id: 2,
                 datetime: 1666530559276,
                 places: 30,
                 places_left: 0,
-                price: 300
+                price: 300,
+                enrolled: false,
               }
             ]
           }
@@ -512,6 +557,18 @@
         this.selectedSubjects = subjects;
         if (!this.activeExams.length)
           this.selectDay(-1);
+      },
+      enroll: function(examId) {
+        this.days[this.activeDay].exams.forEach(e => {
+          e.enrolled = e.enrolled || e.id == examId;
+          if (e.id == examId) e.places_left -= 1;
+        });
+      },
+      signOut: function(examId) {
+        this.days[this.activeDay].exams.forEach(e => {
+          e.enrolled = e.enrolled && e.id != examId;
+          if (e.id == examId) e.places_left += 1;
+        });
       }
     },
     computed: {
@@ -530,8 +587,6 @@
         filtered = {};
         Object.keys(this.days).forEach(key => {
           day = this.days[key];
-          if (key == 24)
-            console.log(this.selectedSubjects, day.exams);
           filtered[key] = {
             active: day.active,
             exams: day.exams.filter(

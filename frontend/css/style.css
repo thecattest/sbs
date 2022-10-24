@@ -14,10 +14,6 @@ body {
   'opsz' 40
 }
 
-.day.active {
-  background: #ddd;
-}
-
 .day {
   font-size: 18px;
   cursor: default;
@@ -44,6 +40,22 @@ body {
 
 .day.clickable:not(.active):hover {
   background-color: #eee;
+}
+
+.day.active {
+  background: #ddd;
+}
+
+.day.enrolled {
+  background-color: #19e63c33;
+}
+
+.day.enrolled.active {
+  background-color: #19e63c77;
+}
+
+.day.clickable.enrolled:not(.active):hover {
+  background-color: #19e63c66;
 }
 
 .dot {
