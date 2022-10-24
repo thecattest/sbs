@@ -47,15 +47,15 @@ body {
 }
 
 .day.enrolled {
+  background-color: #19e63c22;
+}
+
+.day.clickable.enrolled:not(.active):hover {
   background-color: #19e63c33;
 }
 
 .day.enrolled.active {
-  background-color: #19e63c77;
-}
-
-.day.clickable.enrolled:not(.active):hover {
-  background-color: #19e63c66;
+  background-color: #19e63c44;
 }
 
 .dot {

@@ -14,17 +14,21 @@
 <body>
     <div class="container my-4">
         <h2 class="my-3 mx-2">Календарь мероприятий</h2>
-        <div class="container d-flex justify-content-center" id="app">
-          <div class="d-flex flex-column">
-            <filters @select-type="selectType" @select-subjects="selectSubjects" :constants="constants"></filters>
-            <calendar :select="selectDay" @step="step" :year="year" :month="month"
-              :days="filteredDays" :constants="constants"
-            ></calendar>
-            <exam-list
-              :enroll="enroll" :sign-out="signOut"
-              :day="activeDay" :exams="activeExams"
-              :month="month" :constants="constants"
-            ></exam-list>
+        <div class="container py-3" id="app">
+          <div class="row gy-3">
+            <div class="col-12 order-2 order-md-1 offset-md-4 col-md-4 flex-column">
+              <calendar :select="selectDay" @step="step" :year="year" :month="month"
+                :days="filteredDays" :constants="constants"
+              ></calendar>
+              <exam-list
+                :enroll="enroll" :sign-out="signOut"
+                :day="activeDay" :exams="activeExams"
+                :month="month" :constants="constants"
+              ></exam-list>
+            </div>
+            <div class="col-12 order-1 order-md-2 col-md-3">
+              <filters @select-type="selectType" @select-subjects="selectSubjects" :constants="constants"></filters>
+            </div>
           </div>
         </div>
     </div>
@@ -102,8 +106,8 @@
       }
     },
     template: `
-      <div class="calendar card d-flex flex-column my-3">
-        <div class="calendar-header-container mx-3 d-flex justify-content-between">
+      <div class="calendar card d-flex flex-column mb-3">
+        <div class="calendar-header-container mx-2 d-flex justify-content-between">
           <div class="calendar-header d-flex align-items-center">
             <div class="calendar-title">{{ months[month] }} {{ year }}</div>
           </div>
