@@ -272,3 +272,41 @@ def set_visited(exam_id):
 
     session.close()
     return make_response(jsonify({'ok': 'true'}), 200)
+
+
+@api_blueprint.route('/api/exam/<exam_id>', methods=['DELETE'])
+def unregister(exam_id):
+    check_user_is_authenticated()
+
+    session = db_session.create_session()
+    exam: Exam = session.query(Exam).filter(Exam.id == exam_id).first()
+    if current_user.role == User.ROLE_CLIENT:
+
+        if exam.date < datetime.utcnow():
+            return make_response(jsonify({'error': 'exam is over'}), 403)
+
+        is_participant = session.query(Registration).filter(Registration.exam_id == exam_id,
+                                                            Registration.user_id == current_user.id).first()
+        if is_participant is None:
+            make_response(jsonify({'error': 'not registered'}), 403)
+        else:
+            resp = dict()
+            session.delete(is_participant)
+            session.commit()
+            resp['id'] = exam.id
+            resp['title'] = exam.type.title
+            resp['places'] = exam.places
+            participants = session.query(Registration).filter(Registration.exam_id == exam.id).all()
+            resp['participants'] = len(participants)
+            resp['subject'] = exam.subject.title
+            resp['date'] = exam.date
+            return make_response(jsonify(resp), 200)
+
+    participants = session.query(Registration).filter(Registration.exam_id == exam.id).all()
+    if len(participants) > 0:
+        return make_response(jsonify({'error': 'list of participants is not empty'}), 403)
+
+    session.delete(exam)
+    session.commit()
+    session.close()
+    return make_response(jsonify({'ok': 'true'}), 200)
