@@ -232,3 +232,20 @@ def get_exam_by_id(exam_id):
         list_of_participants.append([participant.user.phone, participant.user.id])
     response['participants'] = list_of_participants
     return make_response(jsonify(response), 200)
+
+
+@api_blueprint.route('/api/constants/', methods=['GET'])
+def get_constants():
+    session = db_session.create_session()
+    response = dict()
+    types = session.query(Type).all()
+    for i in types:
+        type: Type = i
+        info = dict()
+        info['title'] = type.title
+        subjects = dict()
+        for sub in type.subjects:
+            subjects[sub.id] = sub.title
+        info['subjects'] = subjects
+        response[type.id] = info
+    return make_response(jsonify(response), 200)
