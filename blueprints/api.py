@@ -10,26 +10,9 @@ from datetime import timedelta
 api_blueprint = Blueprint('api', __name__)
 
 
-def check_user_is_authenticated(decorating_func):
-    def decorated_func(*args, **kwargs):
-        if not current_user.is_authenticated:
-            abort(make_response(jsonify({'error': 'not authenticated'}), 403))
-        return decorating_func(*args, **kwargs)
-
-    return decorated_func
-
-
-@api_blueprint.route('/api/something/<int:some_id>', methods=['GET'])
-@check_user_is_authenticated
-def get_something(some_id):
-    print(current_user)
-    db = db_session.create_session()
-    response = {
-        'some': 'thing',
-        'id': some_id
-    }
-    db.close()
-    return make_response(jsonify(response), 200)
+def check_user_is_authenticated():
+    if not current_user.is_authenticated:
+        abort(make_response(jsonify({'error': 'not authenticated'}), 403))
 
 
 @api_blueprint.route('/api/code/', methods=['POST'])
@@ -104,10 +87,11 @@ def get_exams_by_month(year_n, month_n):
         resp = dict()
         resp['id'] = exam.id
         resp['title'] = exam.type.title
-        subjects = {}
-        for sub in exam.get_subjects():
-            subjects[sub] = session.query(Subject).filter(Subject.id==sub).first().title
-        resp['subjects'] = subjects
+        resp['places'] = exam.places
+        participants = session.query(Registration).filter(Registration.exam_id == exam.id).all()
+        resp['participants'] = len(participants)
+        resp['subject'] = exam.subject.title
+        resp['date'] = exam.date
         if exam_day in exams_resp:
             exams_resp[exam_day].append(resp)
         else:
@@ -116,3 +100,98 @@ def get_exams_by_month(year_n, month_n):
         response['user_role'] = current_user.role
         return make_response(response, 200)
 
+
+@api_blueprint.route('/api/exam/<exam_id>', methods=['POST'])
+def order_exam(exam_id):
+    check_user_is_authenticated()
+
+    if current_user.role == User.ROLE_ADMIN:
+        return make_response(jsonify({'error': 'invalid role'}), 405)
+    session = db_session.create_session()
+    exam: Exam = session.query(Exam).filter(Exam.id == exam_id).first()
+    if exam is None:
+        return make_response(jsonify({'error': 'exam does not exist'}), 400)
+
+    participants = session.query(Registration).all()
+    if len(participants) >= exam.places:
+        return make_response(jsonify({'error': 'places are over'}), 403)
+
+    if (datetime.utcnow() - exam.date).days < 3:
+        return make_response(jsonify({'error': 'registration are closed'}), 403)
+
+    already_ordered = session.query(Registration).filter(Registration.exam_id == exam_id,
+                                                         Registration.user_id == current_user.id).first()
+    if already_ordered:
+        return make_response(jsonify({'error': 'already ordered'}), 403)
+
+    r = Registration()
+    r.exam_id = exam.id
+    r.user_id = current_user.id
+    session.add(r)
+    session.commit()
+    resp = dict()
+    resp['id'] = exam.id
+    resp['title'] = exam.type.title
+    resp['places'] = exam.places
+    resp['participants'] = len(participants) + 1
+    resp['subject'] = exam.subject.title
+    resp['date'] = exam.date
+    session.close()
+    return make_response(jsonify({'exam': resp}), 200)
+
+
+@api_blueprint.route('/api/exam/', methods=['POST'])
+def create_exam():
+    check_user_is_authenticated()
+
+    if current_user.role == User.ROLE_CLIENT:
+        return make_response(jsonify({'error': 'invalid role'}), 405)
+
+    r = request.json
+    if 'date' not in r or 'type' not in r or 'subject' not in r or 'places' not in r or 'price' not in r:
+        return make_response(jsonify({'error': 'missing argument'}), 400)
+
+    session = db_session.create_session()
+    exam = Exam()
+    exam.type_id = r['type']
+    exam.places = r['places']
+    exam.subject_id = r['subject']
+    exam.price = r['price']
+    exam.date = datetime.utcfromtimestamp(r['date'])
+    session.add(exam)
+    session.commit()
+
+    resp = dict()
+    resp['id'] = exam.id
+    resp['title'] = exam.type.title
+    resp['places'] = exam.places
+    resp['participants'] = 0
+    resp['subject'] = exam.subject.title
+    resp['date'] = exam.date
+    session.close()
+    return make_response(jsonify({'exam': resp}), 200)
+
+
+@api_blueprint.route('/api/my/', methods=['GET'])
+def get_client_exams():
+    check_user_is_authenticated()
+
+    if current_user.role == User.ROLE_ADMIN:
+        return make_response(jsonify({'error': 'invalid role'}), 405)
+
+    session = db_session.create_session()
+    user_exams = session.query(Registration).filter(Registration.user_id).all()
+
+    response = {}
+    exams = []
+    for i in user_exams:
+        reg: Registration = i
+        exam = reg.exam
+        resp = dict()
+        resp['id'] = exam.id
+        resp['title'] = exam.type.title
+        resp['subject'] = exam.subject.title
+        resp['date'] = exam.date
+        exams.append(resp)
+    response['exams'] = exams
+    return make_response(response, 200)

@@ -23,7 +23,7 @@ db.commit()
 
 e = Exam()
 e.type_id = t.id
-e.subjects = '[1]'
+e.subject_id = s.id
 e.places = 30
 e.price = 350
 e.date = datetime.utcnow()
