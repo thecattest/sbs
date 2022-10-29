@@ -249,3 +249,26 @@ def get_constants():
         info['subjects'] = subjects
         response[type.id] = info
     return make_response(jsonify(response), 200)
+
+
+@api_blueprint.route('/api/exam/<exam_id>', methods=['PUT'])
+def set_visited(exam_id):
+    check_user_is_authenticated()
+
+    if current_user.role == User.ROLE_CLIENT:
+        return make_response(jsonify({'error': 'invalid role'}), 403)
+
+    r = request.json
+    if 'attendees' not in r:
+        return make_response(jsonify({'error': 'missing argument'}), 400)
+
+    session = db_session.create_session()
+
+    for i in r['attendees'].keys():
+        reg: Registration = session.query(Registration).filter(Registration.exam_id == exam_id,
+                                                               Registration.user_id == i).first()
+        reg.visited = r['attendees'][i]
+        session.commit()
+
+    session.close()
+    return make_response(jsonify({'ok': 'true'}), 200)
