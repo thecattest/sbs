@@ -32,7 +32,7 @@
             </div>
           </div>
           <attendees-modal v-if="isAdmin" @save="saveAttendees" :exam="attendeesExam" :constants="constants"></attendees-modal>
-          <confirmation-modal
+          <confirmation-modal v-if="isAdmin"
             mid="deleteExam" title="Вы уверены, что хотите удалить экзамен?"
             btn-class="btn-danger" btn-text="Удалить" @confirmed="deleteExam"
           ></confirmation-modal>
@@ -358,7 +358,7 @@
             <span class="tag" :class="tagClass">{{ constants[exam.type_id].title }}</span>
             {{constants[exam.type_id].subjects[exam.subject_id]}}
           </div>
-          <span
+          <span v-if="admin"
             data-bs-toggle="modal" data-bs-target="#deleteExam"
             class="material-symbols-outlined delete-btn"
             @click="prepareForDeletion"
