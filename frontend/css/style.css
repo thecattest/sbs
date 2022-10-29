@@ -11,7 +11,7 @@ body {
   'FILL' 0,
   'wght' 500,
   'GRAD' 0,
-  'opsz' 40
+  'opsz' 48
 }
 
 .day {
@@ -19,7 +19,7 @@ body {
   cursor: default;
   padding: 5px;
   width: 46px;
-  height: 46px;
+  height: 51px;
   border-radius: 12px;
 }
 
@@ -47,16 +47,16 @@ body {
 }
 
 .day.enrolled {
-  background-color: #19e63c22;
+  border: 2px solid #19e63c66;
 }
 
-.day.clickable.enrolled:not(.active):hover {
+/* .day.clickable.enrolled:not(.active):hover {
   background-color: #19e63c33;
 }
 
 .day.enrolled.active {
   background-color: #19e63c44;
-}
+} */
 
 .dot {
   height: 8px;
@@ -109,6 +109,8 @@ body {
 
 .exam-list-item-body {
   font-size: 16px;
+  color: #999;
+  padding-left: 5px;
 }
 
 .exam-list-body {
@@ -133,4 +135,8 @@ body {
 
 .filter-subjects {
   margin-top: 10px;
+}
+
+.attendees-modal-header {
+  font-size: 18px;
 }

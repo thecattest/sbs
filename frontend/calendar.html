@@ -18,11 +18,11 @@
           <div class="row gy-3">
             <div class="col-12 order-2 order-md-1 offset-md-4 col-md-4 flex-column">
               <calendar :select="selectDay" @step="step" :year="year" :month="month"
-                :days="filteredDays" :constants="constants"
+                :days="filteredDays" :constants="constants" :admin="isAdmin" :client="isClient"
               ></calendar>
               <exam-list
-                :enroll="enroll" :sign-out="signOut"
-                :day="activeDay" :exams="activeExams"
+                :enroll="enroll" :sign-out="signOut" :admin="isAdmin" :client="isClient"
+                :day="activeDay" :exams="activeExams" :open-attendees="openAttendees"
                 :month="month" :constants="constants"
               ></exam-list>
             </div>
@@ -30,6 +30,7 @@
               <filters @select-type="selectType" @select-subjects="selectSubjects" :constants="constants"></filters>
             </div>
           </div>
+          <attendees-modal v-if="isAdmin" @save="saveAttendees" :exam="attendeesExam" :constants="constants"></attendees-modal>
         </div>
     </div>
 </body>
@@ -42,7 +43,9 @@
       active: Boolean,
       disabled: Boolean,
       exams: Array,
-      constants: Object
+      constants: Object,
+      admin: Boolean,
+      client: Boolean,
     },
     data: function() {
       return {
@@ -83,7 +86,7 @@
         return !this.disabled && this.exams.length;
       },
       enrolled: function() {
-        return this.exams.filter(exam => exam.enrolled).length != 0;
+        return this.client && this.exams.filter(exam => exam.enrolled).length != 0;
       }
     }
   });
@@ -94,7 +97,9 @@
       month: Number,
       days: Object,
       constants: Object,
-      select: Function
+      select: Function,
+      admin: Boolean,
+      client: Boolean,
     },
     data: function() {
       return {
@@ -129,7 +134,7 @@
             <calendar-day v-for="(d, di) in week" :key="di"
               @select="select"
               :day="d.day" :active="d.active" :disabled="d.disabled"
-              :exams="d.exams" :constants="constants"
+              :exams="d.exams" :constants="constants" :admin="admin" :client="client"
             ></calendar-day>
           </div>
         </div>
@@ -192,8 +197,8 @@
         </div>
         <div class="filter-subjects" v-if="selectedTypeId != -1">
           <div class="form-check" v-for="s in subjects" :key="s[1]">
-            <input class="form-check-input" type="checkbox" :value="s[1]" :id="s[1]" v-model="selectedSubjects" />
-            <label class="form-check-label" :for="s[1]">
+            <input class="form-check-input" type="checkbox" :value="s[1]" :id="'subject' + s[1]" v-model="selectedSubjects" />
+            <label class="form-check-label" :for="'subject' + s[1]">
               {{s[0]}}
             </label>
           </div>
@@ -225,10 +230,78 @@
     }
   });
 
+  Vue.component('attendees-modal', {
+    props: {
+      constants: Object,
+      exam: Object
+    },
+    data: function() {
+      return {
+        attendees: []
+      }
+    },
+    template: `
+    <div class="modal fade" id="attendeesModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-sm">
+        <div class="modal-content" v-if="exam">
+          <div class="modal-header">
+            <div class="modal-title attendees-modal-header">
+              <span class="tag" :class="tagClass">{{ constants[exam.type_id].title }}</span>
+              {{constants[exam.type_id].subjects[exam.subject_id]}}
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-2">Отметить присутствующих: </div>
+            <div class="attendees-modal-list mx-2">
+              <div class="form-check" v-for="a in exam.attendees" :key="a.id">
+                <input class="form-check-input" type="checkbox" :value="a.id" :id="'attendee' + a.id" v-model="attendees" />
+                <label class="form-check-label" :for="'attendee' + a.id">
+                  {{formatPhone(a.phone)}}
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Закрыть</button>
+            <button type="button" class="btn btn-success btn-sm" data-bs-dismiss="modal" @click="save">Сохранить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    `,
+    methods: {
+      save: function() {
+        this.$emit('save', this.attendeesToSave);
+      },
+      formatPhone: function(p) {
+        p = String(p);
+        return "+" + p[0] + " " + p.substr(1, 3) + " " + p.substr(4, 3) + " " + p.substr(7, 2) + " " + p.substr(9, 2);
+      }
+    },
+    computed: {
+      tagClass: function() {
+        return "exam"+Object.keys(this.constants).indexOf(String(this.exam.type_id));
+      },
+      attendeesToSave: function() {
+        return this.exam.attendees.map(a => {
+          return {id: a.id, visited: this.attendees.indexOf(a.id) !== -1}
+        });
+      }
+    },
+    watch: {
+      exam: function() {
+        this.attendees = this.exam.attendees.filter(a => a.visited).map(a => a.id);
+      }
+    }
+  });
+
   Vue.component('exam-list-item', {
     props: {
       exam: Object,
-      constants: Object
+      constants: Object,
+      admin: Boolean,
+      client: Boolean,
     },
     data: function() {
       return {
@@ -251,12 +324,15 @@
         </div>
         <div class="exam-list-item-footer d-flex justify-content-end">
           <div class="btn-group">
-            <button type="button" v-if="exam.places_left && !exam.enrolled"
+            <button type="button" v-if="exam.places_left && !exam.enrolled && client"
               class="btn btn-sm btn-primary" @click="enroll"
             >Записаться</button>
-            <button type="button" v-else-if="exam.enrolled"
+            <button type="button" v-else-if="exam.enrolled && client"
               class="btn btn-sm btn-danger" @click="signOut"
             >Отписаться</button>
+            <button type="button" v-else-if="admin"
+              class="btn btn-sm btn-info" @click="openAttendees" data-bs-toggle="modal" data-bs-target="#attendeesModal"
+            >Участники</button>
             <button type="button" class="btn btn-sm btn-primary-outline disabled">
               {{placesCaption}}
             </button>
@@ -270,6 +346,9 @@
       },
       signOut: function() {
         this.$emit("sign-out", this.exam.id)
+      },
+      openAttendees: function() {
+        this.$emit("openAttendees", this.exam.id)
       }
     },
     computed: {
@@ -305,7 +384,10 @@
       exams: Array,
       constants: Object,
       enroll: Function,
-      signOut: Function
+      signOut: Function,
+      openAttendees: Function,
+      admin: Boolean,
+      client: Boolean,
     },
     data: function() {
       return {
@@ -329,7 +411,8 @@
         <div class="exam-list-body">
           <exam-list-item
             v-for="(e, i) in exams" :key="i" :exam="e" :constants="constants"
-            @enroll="enroll" @sign-out="signOut"
+            @enroll="enroll" @sign-out="signOut" @openAttendees="openAttendees"
+            :admin="admin" :client="client"
           ></exam-list-item>
         </div>
       </div>
@@ -347,7 +430,13 @@
       days: {},
       constants: [],
       selectedTypeId: -1,
-      selectedSubjects: []
+      selectedSubjects: [],
+      role: 0,
+      roles: {
+        client: 0,
+        admin: 1,
+      },
+      attendeesExam: undefined
     },
     methods: {
       selectDay: function(dayN) {
@@ -552,6 +641,9 @@
           }
         }
       },
+      getAttendeesExam: function(examId) {
+        return this.activeExams.filter(e => e.id == examId)[0];
+      },
       selectType: function(typeId) {
         this.selectedTypeId = typeId;
         if (!this.activeExams.length)
@@ -573,6 +665,23 @@
           e.enrolled = e.enrolled && e.id != examId;
           if (e.id == examId) e.places_left += 1;
         });
+      },
+      openAttendees: function(examId) {
+        this.attendeesExam = this.getAttendeesExam(examId);
+        this.attendeesExam.attendees = [
+          {id: 123, phone: 79001201235, visited: false},
+          {id: 124, phone: 79001345235, visited: false},
+          {id: 125, phone: 79750127635, visited: true},
+          {id: 126, phone: 79897376473, visited: false},
+          {id: 127, phone: 79563926746, visited: true},
+          {id: 128, phone: 79363267472, visited: true},
+          {id: 129, phone: 79767645345, visited: true},
+          {id: 130, phone: 79367278364, visited: false},
+          {id: 131, phone: 79828727863, visited: true},
+        ]
+      },
+      saveAttendees: function(attendees) {
+        console.log('save', attendees);
       }
     },
     computed: {
@@ -600,7 +709,9 @@
           };
         });
         return filtered;
-      }
+      },
+      isAdmin: function() { return this.role == this.roles.admin },
+      isClient: function() { return this.role == this.roles.client },
     },
     created() {
       d = new Date();
