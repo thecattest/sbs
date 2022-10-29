@@ -97,7 +97,14 @@ def get_exams_by_month(year_n, month_n):
         else:
             exams_resp[exam_day] = [resp]
         response['exams'] = exams_resp
-        response['user_role'] = current_user.role
+        if current_user.is_authenticated:
+            response['user_role'] = current_user.role
+            if current_user.role == User.ROLE_CLIENT:
+                is_registered = session.query(Registration).filter(Registration.exam_id == exam.id, Registration.user_id == current_user.id).first()
+                is_registered = False if is_registered is None else True
+                response['registered'] = is_registered
+        else:
+            response['user_role'] = User.ROLE_CLIENT
         return make_response(response, 200)
 
 
@@ -189,7 +196,7 @@ def get_client_exams():
         exam = reg.exam
         resp = dict()
         resp['id'] = exam.id
-        resp['title'] = exam.type.title
+        resp['type'] = exam.type
         resp['subject'] = exam.subject.title
         resp['date'] = exam.date
         exams.append(resp)
