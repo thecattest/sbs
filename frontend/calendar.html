@@ -890,6 +890,10 @@
       this.constants = this.getConstants();
       // this.constants.sort((a, b) => a.id - b.id);
       this.days = this.getDays();
+      const params = new Proxy(new URLSearchParams(window.location.search), {
+        get: (searchParams, prop) => searchParams.get(prop),
+      });
+      if (params['role'] == 'client') this.role = this.roles.client;
     }
   });
 </script>
