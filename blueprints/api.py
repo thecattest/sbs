@@ -100,7 +100,8 @@ def get_exams_by_month(year_n, month_n):
         if current_user.is_authenticated:
             response['user_role'] = current_user.role
             if current_user.role == User.ROLE_CLIENT:
-                is_registered = session.query(Registration).filter(Registration.exam_id == exam.id, Registration.user_id == current_user.id).first()
+                is_registered = session.query(Registration).filter(Registration.exam_id == exam.id,
+                                                                   Registration.user_id == current_user.id).first()
                 is_registered = False if is_registered is None else True
                 response['registered'] = is_registered
         else:
@@ -196,9 +197,38 @@ def get_client_exams():
         exam = reg.exam
         resp = dict()
         resp['id'] = exam.id
-        resp['type'] = exam.type
+        resp['type'] = exam.type_id
         resp['subject'] = exam.subject.title
         resp['date'] = exam.date
         exams.append(resp)
     response['exams'] = exams
-    return make_response(response, 200)
+    return make_response(jsonify(response), 200)
+
+
+@api_blueprint.route('/api/exam/<exam_id>', methods=['GET'])
+def get_exam_by_id(exam_id):
+    check_user_is_authenticated()
+
+    if current_user.role == User.ROLE_CLIENT:
+        return make_response(jsonify({'error': 'invalid role'}), 501)
+
+    session = db_session.create_session()
+    exam: Exam = session.query(Exam).filter(Exam.id == exam_id).first()
+
+    if exam is None:
+        return make_response(jsonify({'error': 'exam does not exist'}), 404)
+
+    response = dict()
+    response['id'] = exam.id
+    response['type'] = exam.type_id
+    response['subject'] = exam.subject.title
+    response['date'] = exam.date
+    response['price'] = exam.price
+
+    participants = session.query(Registration).filter(Registration.exam_id == exam_id).all()
+    list_of_participants = []
+    for i in participants:
+        participant: Registration = i
+        list_of_participants.append([participant.user.phone, participant.user.id])
+    response['participants'] = list_of_participants
+    return make_response(jsonify(response), 200)
