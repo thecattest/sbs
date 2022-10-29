@@ -105,25 +105,27 @@ body {
 }
 .calendar-month-step:hover {color: initial;}
 
-.exam-list-header.msg {
-  color: #737373;
-}
-
-.exam-list-header:not(.msg) {
-  font-size: 20px;
+.exam-list-header{
+  font-size: 22px;
   font-weight: bold;
 }
 
+.exam-list-day.msg {
+  color: #737373;
+}
+
 .exam-list-item {
-  margin: 10px 0;
+  padding: 15px 0;
+  border-bottom: 1px solid #e4e4e4;
 }
 
 .exam-list-item:first-child {
-  margin-top: 15px;
+  margin-top: 5px;
 }
 
 .exam-list-item:last-child {
-  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .exam-list-item-header {
@@ -164,8 +166,12 @@ body {
   font-size: 18px;
 }
 
-.delete-btn {
+.icon-btn {
   font-size: 20px!important;
   margin-top: 5px;
   cursor: pointer;
+}
+
+.new-exam-modal-header {
+  font-size: 18px;
 }

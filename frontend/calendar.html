@@ -31,11 +31,18 @@
               <filters @select-type="selectType" @select-subjects="selectSubjects" :constants="constants"></filters>
             </div>
           </div>
-          <attendees-modal v-if="isAdmin" @save="saveAttendees" :exam="attendeesExam" :constants="constants"></attendees-modal>
+
+          <attendees-modal v-if="isAdmin"
+            @save="saveAttendees"
+            :exam="attendeesExam" :constants="constants"
+          ></attendees-modal>
           <confirmation-modal v-if="isAdmin"
-            mid="deleteExam" title="Вы уверены, что хотите удалить экзамен?"
+            mid="deleteExamModal" title="Вы уверены, что хотите удалить экзамен?"
             btn-class="btn-danger" btn-text="Удалить" @confirmed="deleteExam"
           ></confirmation-modal>
+          <new-exam-modal v-if="isAdmin" @add-exam="addExam"
+            :constants="constants"
+          ></new-exam-modal>
         </div>
     </div>
 </body>
@@ -334,6 +341,98 @@
     }
   });
 
+  Vue.component('new-exam-modal', {
+    props: {
+      constants: Object
+    },
+    data: function() {
+      return {
+        exam: {
+          datetime: undefined,
+          type_id: -1,
+          subject_id: -1,
+          places: 10,
+          price: undefined
+        }
+      }
+    },
+    template: `
+    <div class="modal fade" id="newExamModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div class="modal-title new-exam-modal-header">
+              Добавить экзамен
+            </div>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <!--label for="typeSelect" class="form-label">"ЕГЭ или ОГЭ"</label-->
+              <select class="form-select form-select-sm" id="typeSelect" v-model="exam.type_id">
+                <option value="-1">Экзамен</option>
+                <template>
+                  <option v-for="k in typeKeys" :key="'type' + k" :value="k">{{constants[k].title}}</option>
+                </template>
+              </select>
+            </div>
+            <div class="mb-3" v-if="exam.type_id != -1">
+              <label for="subjectSelect" class="form-label">Предмет</label>
+              <select class="form-select form-select-sm" id="subjectSelect" v-model="exam.subject_id">
+                <option :value="-1">Предмет</option>
+                <template>
+                  <option v-for="s in subjectKeys" :key="'subject' + s" :value="s">{{subjects[s]}}</option>
+                </template>
+              </select>
+            </div>
+            <template v-if="exam.subject_id != -1">
+            <div class="mb-3">
+              <label for="places" class="form-label">Количество мест: <b>{{ exam.places }}</b></label>
+              <input type="range" class="form-range" min="10" max="50" step="5" id="places" v-model="exam.places">
+            </div>
+            <div class="mb-3">
+              <label for="price" class="form-label">Цена</label>
+              <div class="input-group">
+                <input type="number" class="form-control form-control-sm" id="price" v-model="exam.price" placeholder="Цена">
+                <div class="input-group-text">₽</div>
+              </div>
+            </div>
+            <div class="mb-3" >
+              <label for="datetime" class="form-label">Дата и время экзамена</label>
+              <input type="datetime-local" id="datetime" class="form-control form-control-sm" v-model="exam.datetime">
+            </div>
+            </template>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
+            <button type="button" class="btn btn-sm btn-success" data-bs-dismiss="modal-" :disabled="disabled" @click="add">Добавить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    `,
+    methods: {
+      add: function() {
+        this.$emit('add-exam', this.exam);
+      }
+    },
+    computed: {
+      typeKeys: function() {
+        return Object.keys(this.constants)
+      },
+      subjects: function() {
+        return this.constants[this.exam.type_id].subjects;
+      },
+      subjectKeys: function() {
+        console.log(this.subjects);
+        return Object.keys(this.subjects);
+      },
+      disabled: function() {
+        e = this.exam;
+        return !(e.type_id !== -1 && e.subject_id != -1 && e.price && e.price > 0)
+      }
+    }
+  });
+
   Vue.component('exam-list-item', {
     props: {
       exam: Object,
@@ -359,8 +458,8 @@
             {{constants[exam.type_id].subjects[exam.subject_id]}}
           </div>
           <span v-if="admin"
-            data-bs-toggle="modal" data-bs-target="#deleteExam"
-            class="material-symbols-outlined delete-btn"
+            data-bs-toggle="modal" data-bs-target="#deleteExamModal"
+            class="material-symbols-outlined icon-btn"
             @click="prepareForDeletion"
           >delete</span>
         </div>
@@ -449,12 +548,21 @@
     },
     template: `
       <div class="exam-list card">
-        <div class="exam-list-header" :class="day === -1 ? 'msg' : ''">
+        <div class="exam-list-header d-flex align-items-center justify-content-between">
+          Экзамены
+          <button v-if="admin"
+            data-bs-toggle="modal" data-bs-target="#newExamModal"
+            class="btn btn-sm btn-success d-flex align-items-center"
+          >
+            Добавить <span class="material-symbols-outlined icon-btn ms-1 mt-0">add</span>
+          </button>
+        </div>
+        <div class="exam-list-day" :class="{'msg m-2': day === -1}">
           <template v-if="day !== -1">
             {{ day }} {{ months[month] }}
           </template>
           <template v-else>
-            Выберите день
+            Выберите день в календаре, чтобы увидеть список экзаменов
           </template>
         </div>
         <div class="exam-list-body">
@@ -741,6 +849,9 @@
         if (!this.activeExams.length)
           this.selectDay(-1);
         this.prepareForDeletion(-1);
+      },
+      addExam: function(exam) {
+        console.log(exam);
       }
     },
     computed: {
