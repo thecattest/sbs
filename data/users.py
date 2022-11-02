@@ -7,14 +7,14 @@ from flask_login import UserMixin
 from random import randrange
 
 
-class User(SqlAlchemyBase, UserMixin, SerializerMixin):
+class User(UserMixin, SqlAlchemyBase, SerializerMixin):
     __tablename__ = 'users'
     ROLE_CLIENT = 0
     ROLE_ADMIN = 1
 
     id = sqlalchemy.Column(sqlalchemy.Integer,
                            primary_key=True, autoincrement=True)
-    phone = sqlalchemy.Column(sqlalchemy.String(13), unique=True, nullable=False)
+    phone = sqlalchemy.Column(sqlalchemy.Integer, unique=True, nullable=False)
     sms_code = sqlalchemy.Column(sqlalchemy.Integer, nullable=True)
     sms_code_valid_thru = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)
     role = sqlalchemy.Column(sqlalchemy.Integer, unique=False, nullable=True, default=ROLE_CLIENT)
@@ -31,6 +31,7 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
 
     def is_admin(self):
         return self.role == self.ROLE_ADMIN
+
 
     def __repr__(self):
         return f"<User {self.id} {self.phone} {self.role}>"

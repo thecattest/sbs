@@ -11,7 +11,7 @@ class Exam(SqlAlchemyBase, SerializerMixin):
                            primary_key=True, autoincrement=True)
     type_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('types.id'))
     subject_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('subjects.id'))
-    date = sqlalchemy.Column(sqlalchemy.Date, nullable=False)
+    date = sqlalchemy.Column(sqlalchemy.DateTime, nullable=False)
     places = sqlalchemy.Column(sqlalchemy.Integer, nullable=False)
     price = sqlalchemy.Column(sqlalchemy.Integer, nullable=False)
 
