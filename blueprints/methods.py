@@ -32,7 +32,7 @@ def check_sms_code(code, expiries_at, u_code):
 
 
 def get_first_and_last_month_day(year, month):
-    d = datetime.utcnow().replace(year=year, month=month, day=1, hour=0, minute=0, microsecond=0, second=0)
+    d = datetime.utcnow().replace(year=year, month=month + 1, day=1, hour=0, minute=0, microsecond=0, second=0)
     first = d + timedelta()
     next_month = d.replace(day=28) + timedelta(days=4)
     next_month = next_month - timedelta(days=next_month.day)
