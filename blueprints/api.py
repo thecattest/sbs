@@ -37,7 +37,7 @@ def generate_auth_code():
 
     code = generate_sms_code()
     exist_user.sms_code = code
-    exist_user.sms_code_valid_thru = datetime.utcnow() + timedelta(seconds=SMS_CODE_TIMEOUT)
+    exist_user.sms_code_valid_thru = datetime.now() + timedelta(seconds=SMS_CODE_TIMEOUT)
     session.commit()
     session.close()
     return make_response(jsonify({'ok': 'true'}), 204)
@@ -114,7 +114,7 @@ def order_exam(exam_id):
     if len(participants) >= exam.places:
         return make_response(jsonify({'error': 'places are over'}), 403)
 
-    if (datetime.utcnow() - exam.date).days < 3:
+    if (datetime.now() - exam.date).days < 3:
         return make_response(jsonify({'error': 'registration are closed'}), 403)
 
     already_ordered = session.query(Registration).filter(Registration.exam_id == exam_id,
@@ -263,7 +263,7 @@ def unregister(exam_id):
     exam: Exam = session.query(Exam).filter(Exam.id == exam_id).first()
     if current_user.role == User.ROLE_CLIENT:
 
-        if exam.date < datetime.utcnow():
+        if exam.date < datetime.now():
             return make_response(jsonify({'error': 'exam is over'}), 403)
 
         is_participant = session.query(Registration).filter(Registration.exam_id == exam_id,

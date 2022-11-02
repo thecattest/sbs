@@ -26,7 +26,7 @@ e.type_id = t.id
 e.subject_id = s.id
 e.places = 30
 e.price = 350
-e.date = datetime.utcnow()
+e.date = datetime.now()
 db.add(e)
 db.commit()
 
