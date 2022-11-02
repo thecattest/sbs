@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Авторизация</title>
+  <link rel="stylesheet" href="frontend/css/bootstrap.min.css">
+  <link rel="stylesheet" href="frontend/css/style.css">
+  <script src="frontend/js/bootstrap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" /> -->
+  <!--script src="https://cdn.jsdelivr.net/npm/vue@2"></script>-->
+</head>
+<body>
+  <div class="container my-4">
+    <h2 class="mx-3 my-2">Вход в аккаунт</h2>
+    <div class="container py-3" id="app">
+      <div class="row justify-content-center">
+        <div class="card col-xs-12 col-sm-8 col-md-6 col-lg-5">
+          <div class="mb-3">
+            <label for="phone" class="form-label">Номер телефона</label>
+            <div class="input-group input-group-sm-">
+              <div class="input-group-text">+7</div>
+              <input type="text" class="form-control form-control-sm-" id="phone"
+                placeholder="9001203040" v-model="phone" :disabled="codeSent"
+              >
+              <small v-if="codeSent" @click="editPhone" class="input-group-text edit-phone d-flex align-items-center">
+                <!-- <span>изменить</span> -->
+                <span class="mt-0 ms-1 icon-btn material-symbols-outlined">edit</span>
+              </small>
+            </div>
+            <small class="invalid" v-show="phoneMsg">{{ phoneMsg }}</small>
+          </div>
+          <div class="mb-3" v-show="codeSent">
+            <label for="code" class="form-label">Проверочный код</label>
+            <input type="text" class="form-control form-control-sm-" id="code"
+              placeholder="1234" v-model="code"
+            >
+            <small class="invalid" v-show="codeMsg">{{ codeMsg }}</small>
+          </div>
+          <div class="d-flex justify-content-end">
+            <button type="button" class="btn btn-primary btn-sm"
+              :disabled="codeDisabled" v-if="!codeSent" @click="sendCode"
+            >Получить код</button>
+            <button type="button" class="btn btn-primary btn-sm"
+              v-show="codeSent" :disabled="loginDisabled" @click="login"
+            >Войти</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+<script>
+  app = new Vue({
+    el: "#app",
+    data: {
+      phone: undefined,
+      phoneMsg: '',
+      codeSent: false,
+      code: undefined,
+      codeMsg: ''
+    },
+    methods: {
+      sendCode: function() {
+        vm = this;
+        axios.post('/api/code', {'phone': this.phone})
+          .then(response => {
+            const status = response.status
+            if (status == 204) {
+              vm.codeSent = true;
+              vm.phoneMsg = '';
+            }
+          })
+          .catch(error => {
+            vm.handleResponseError(error);
+            if (error.response.status == 404)
+              this.phoneMsg = 'номер телефона не найден';
+        });
+      },
+      login: function() {
+        axios.post('/api/login', {'phone': this.phone, 'code': Number(this.code)})
+          .then(response => {
+            const status = response.status
+            console.log(response.data);
+            if (status == 204) {
+              window.location.replace("calendar");
+            }
+          })
+          .catch(error => {
+            vm.handleResponseError(error);
+            if (error.response.status == 403)
+              this.codeMsg = 'неверный код';
+        });
+      },
+      handleResponseError: function (error) {
+        console.log(error.toJSON());
+        console.log(error.response.data);
+      },
+      editPhone: function() {
+        this.phone = undefined;
+        this.codeSent = false;
+      }
+    },
+    watch: {
+      phone: function() {
+        this.phoneMsg = '';
+        p = this.phone;
+        p = p.replaceAll(/[^\d]/g, '');
+        if (p[0] == '7') p = p.substring(1);
+        if (p[0] == '8') p = p.substring(1);
+        p = p.substring(0, 10);
+        if (p.length > 3) p = p.substring(0, 3) + ' ' + p.substring(3);
+        if (p.length > 7) p = p.substring(0, 7) + ' ' + p.substring(7);
+        if (p.length > 10) p = p.substring(0, 10) + ' ' + p.substring(10);
+        this.phone = p;
+      },
+      code: function() {
+        this.codeMsg = '';
+        c = this.code;
+        c = c.replaceAll(/[^\d]/g, '');
+        c = c.substring(0, 4);
+        this.code = c;
+      }
+    },
+    computed: {
+      codeDisabled: function() {
+        return !this.phone || this.phone.length != 13;
+      },
+      loginDisabled: function() {
+        return !this.code || this.code.length != 4;
+      }
+    },
+    created() {
+
+    }
+  });
+</script>
