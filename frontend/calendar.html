@@ -1,50 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Календарь мероприятий</title>
-    <link rel="stylesheet" href="frontend/css/bootstrap.min.css">
-    <link rel="stylesheet" href="frontend/css/style.css">
-    <script src="frontend/js/bootstrap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
-    <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" /> -->
-<!--    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>-->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Календарь мероприятий</title>
+  <link rel="stylesheet" href="frontend/css/bootstrap.min.css">
+  <link rel="stylesheet" href="frontend/css/style.css">
+  <script src="frontend/js/bootstrap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+  <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" /> -->
+  <!--script src="https://cdn.jsdelivr.net/npm/vue@2"></script>-->
 </head>
 <body>
-    <div class="container my-4">
-        <h2 class="my-3 mx-2">Календарь мероприятий</h2>
-        <div class="container py-3" id="app">
-          <div class="row gy-3">
-            <div class="col-12 order-2 order-md-1 offset-md-4 col-md-4 flex-column">
-              <calendar :select="selectDay" @step="step" :year="year" :month="month"
-                :days="filteredDays" :constants="constants" :admin="isAdmin" :client="isClient"
-              ></calendar>
-              <exam-list
-                :enroll="enroll" :sign-out="signOut" :admin="isAdmin" :client="isClient"
-                :day="activeDay" :exams="activeExams" :open-attendees="openAttendees"
-                :prepare-for-deletion="prepareForDeletion"
-                :month="month" :constants="constants"
-              ></exam-list>
-            </div>
-            <div class="col-12 order-1 order-md-2 col-md-3">
-              <filters @select-type="selectType" @select-subjects="selectSubjects" :constants="constants"></filters>
-            </div>
-          </div>
-
-          <attendees-modal v-if="isAdmin"
-            @save="saveAttendees"
-            :exam="attendeesExam" :constants="constants"
-          ></attendees-modal>
-          <confirmation-modal v-if="isAdmin"
-            mid="deleteExamModal" title="Вы уверены, что хотите удалить экзамен?"
-            btn-class="btn-danger" btn-text="Удалить" @confirmed="deleteExam"
-          ></confirmation-modal>
-          <new-exam-modal v-if="isAdmin" @add-exam="addExam"
-            :constants="constants"
-          ></new-exam-modal>
+  <div class="container my-4">
+    <h2 class="m-3">Календарь мероприятий</h2>
+    <div class="container py-3" id="app">
+      <div class="row gy-3">
+        <div class="col-12 order-2 order-md-1 offset-md-4 col-md-4 flex-column">
+          <calendar :select="selectDay" @step="step" :year="year" :month="month"
+            :days="filteredDays" :constants="constants" :admin="isAdmin" :client="isClient"
+          ></calendar>
+          <exam-list
+            :enroll="enroll" :sign-out="signOut" :admin="isAdmin" :client="isClient"
+            :day="activeDay" :exams="activeExams" :open-attendees="openAttendees"
+            :prepare-for-deletion="prepareForDeletion"
+            :month="month" :constants="constants"
+          ></exam-list>
         </div>
+        <div class="col-12 order-1 order-md-2 col-md-3">
+          <filters @select-type="selectType" @select-subjects="selectSubjects" :constants="constants"></filters>
+        </div>
+      </div>
+
+      <attendees-modal v-if="isAdmin"
+        @save="saveAttendees"
+        :exam="attendeesExam" :constants="constants"
+      ></attendees-modal>
+      <confirmation-modal v-if="isAdmin"
+        mid="deleteExamModal" title="Вы уверены, что хотите удалить экзамен?"
+        btn-class="btn-danger" btn-text="Удалить" @confirmed="deleteExam"
+      ></confirmation-modal>
+      <new-exam-modal v-if="isAdmin" @add-exam="addExam"
+        :constants="constants" :year="year" :month="month" :day="activeDay" :type-id="selectedTypeId"
+      ></new-exam-modal>
     </div>
+  </div>
 </body>
 </html>
 
@@ -343,22 +347,27 @@
 
   Vue.component('new-exam-modal', {
     props: {
-      constants: Object
+      constants: Object,
+      year: Number,
+      month: Number,
+      day: Number,
+      typeId: Number
     },
     data: function() {
       return {
         exam: {
           datetime: undefined,
-          type_id: -1,
+          type_id: this.typeId,
           subject_id: -1,
           places: 10,
           price: undefined
-        }
+        },
+        datepicker: undefined
       }
     },
     template: `
-    <div class="modal fade" id="newExamModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-sm">
+    <div class="modal fade" id="newExamModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered- modal-dialog-scrollable modal-sm">
         <div class="modal-content">
           <div class="modal-header">
             <div class="modal-title new-exam-modal-header">
@@ -384,27 +393,25 @@
                 </template>
               </select>
             </div>
-            <template v-if="exam.subject_id != -1">
-            <div class="mb-3">
+            <div class="mb-3" v-show="exam.subject_id != -1">
               <label for="places" class="form-label">Количество мест: <b>{{ exam.places }}</b></label>
               <input type="range" class="form-range" min="10" max="50" step="5" id="places" v-model="exam.places">
             </div>
-            <div class="mb-3">
+            <div class="mb-3" v-show="exam.subject_id != -1">
               <label for="price" class="form-label">Цена</label>
-              <div class="input-group">
+              <div class="input-group input-group-sm">
                 <input type="number" class="form-control form-control-sm" id="price" v-model="exam.price" placeholder="Цена">
                 <div class="input-group-text">₽</div>
               </div>
             </div>
-            <div class="mb-3" >
-              <label for="datetime" class="form-label">Дата и время экзамена</label>
-              <input type="datetime-local" id="datetime" class="form-control form-control-sm" v-model="exam.datetime">
+            <div class="mb-3" v-show="exam.subject_id != -1">
+              <label for="date" class="form-label">Дата экзамена</label>
+              <input type="text" id="date" class="form-control form-control-sm">
             </div>
-            </template>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
-            <button type="button" class="btn btn-sm btn-success" data-bs-dismiss="modal-" :disabled="disabled" @click="add">Добавить</button>
+            <button type="button" class="btn btn-sm btn-success" data-bs-dismiss="modal" :disabled="disabled" @click="add">Добавить</button>
           </div>
         </div>
       </div>
@@ -413,6 +420,17 @@
     methods: {
       add: function() {
         this.$emit('add-exam', this.exam);
+        this.exam = {
+          datetime: undefined,
+          type_id: -1,
+          subject_id: -1,
+          places: 10,
+          price: undefined
+        };
+      },
+      updateStartDate: function() {
+        this.datepicker.setStartDate(this.startDate);
+        this.datepicker.setEndDate(this.startDate);
       }
     },
     computed: {
@@ -423,13 +441,50 @@
         return this.constants[this.exam.type_id].subjects;
       },
       subjectKeys: function() {
-        console.log(this.subjects);
         return Object.keys(this.subjects);
       },
       disabled: function() {
         e = this.exam;
         return !(e.type_id !== -1 && e.subject_id != -1 && e.price && e.price > 0)
+      },
+      startDate: function() {
+        d = moment();
+        d.year(this.year);
+        d.month(this.month);
+        if (this.day != -1)
+          d.date(this.day);
+        return d;
       }
+    },
+    watch: {
+      'exam.type_id': function() {
+        this.exam.subject_id = -1
+      },
+      typeId: function() {
+        this.exam.type_id = this.typeId;
+      },
+      day: function() { this.updateStartDate() },
+      month: function() { this.updateStartDate() },
+      year: function() { this.updateStartDate() },
+    },
+    mounted: function() {
+      const vm = this;
+      this.datepicker = $('input[id="date"]').daterangepicker({
+        timePicker: true,
+        timePicker24Hour: true,
+        singleDatePicker: true,
+        showDropdowns: false,
+        timePickerIncrement: 10,
+        minDate: moment(),
+        // drops: 'up',
+        locale: {
+          format: 'DD.MM.YYYY HH:mm',
+          firstDay: 1
+        }
+      }, (start, end, label) => {
+        vm.exam.datetime = start.unix() * 1000;
+      }).data('daterangepicker');
+      this.updateStartDate();
     }
   });
 
@@ -803,7 +858,7 @@
         return this.activeExams.filter(e => e.id == examId)[0];
       },
       selectType: function(typeId) {
-        this.selectedTypeId = typeId;
+        this.selectedTypeId = Number(typeId);
         if (!this.activeExams.length)
           this.selectDay(-1);
       },
@@ -850,8 +905,18 @@
           this.selectDay(-1);
         this.prepareForDeletion(-1);
       },
-      addExam: function(exam) {
-        console.log(exam);
+      addExam: function(e) {
+        console.log(e);
+        vm = this;
+        d = new Date(e.datetime);
+        e.places_left = e.places;
+        e.id = parseInt(Math.random() * 1000);
+        if (d.getMonth() == vm.month) {
+          if (vm.days[d.getDate()])
+            vm.days[d.getDate()].exams.push(e);
+          else
+            vm.days[d.getDate()] = {active: false, exams: [e]}
+        }
       }
     },
     computed: {
@@ -890,6 +955,10 @@
       this.constants = this.getConstants();
       // this.constants.sort((a, b) => a.id - b.id);
       this.days = this.getDays();
+      const params = new Proxy(new URLSearchParams(window.location.search), {
+        get: (searchParams, prop) => searchParams.get(prop),
+      });
+      if (params['role'] == 'client') this.role = this.roles.client;
     }
   });
 </script>
