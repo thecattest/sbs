@@ -538,7 +538,7 @@
               class="btn btn-sm btn-danger" @click="signOut"
             >Отписаться</button>
             <button type="button" v-else-if="admin"
-              class="btn btn-sm btn-info" @click="openAttendees" data-bs-toggle="modal" data-bs-target="#attendeesModal"
+              class="btn btn-sm btn-secondary" @click="openAttendees" data-bs-toggle="modal" data-bs-target="#attendeesModal"
             >Участники</button>
             <button type="button" class="btn btn-sm btn-primary-outline disabled">
               {{placesCaption}}
@@ -683,24 +683,17 @@
         vm.constants = undefined;
         axios.get('/api/constants')
           .then(response => {
-            const status = response.status
-            console.log(response.data);
-            if (status == 200) {
+            if (response.status == 200)
               vm.constants = response.data;
-            }
           })
-          .catch(error => {
-            vm.handleResponseError(error);
-        });
+          .catch(vm.handleResponseError);
       },
       getDays: function() {
         const vm = this;
         vm.days = undefined;
         axios.get('/api/exams/' + this.year + '/' + this.month)
           .then(response => {
-            const status = response.status
-            console.log(response.data);
-            if (status == 200) {
+            if (response.status == 200) {
               const data = response.data;
               vm.role = data.user_role;
               days = {}
@@ -713,9 +706,26 @@
               vm.days = days;
             }
           })
+          .catch(vm.handleResponseError);
+      },
+      addExam: function(exam) {
+        d = new Date(e.datetime);
+        vm = this;
+        axios.post('/api/exam', exam)
+          .then(response => {
+            if (response.status == 200) {
+              const data = response.data;
+              console.log(data);
+              if (d.getMonth() == vm.month) {
+                const date = d.getDate();
+                if (!(date in vm.days)) vm.$set(days, date, {active: false, exams: []})
+                vm.days[date].exams.push(data);
+              }
+            }
+          })
           .catch(error => {
             vm.handleResponseError(error);
-        });
+          });
       },
       getAttendeesExam: function(examId) {
         return this.activeExams.filter(e => e.id == examId)[0];
@@ -767,19 +777,6 @@
         if (!this.activeExams.length)
           this.selectDay(-1);
         this.prepareForDeletion(-1);
-      },
-      addExam: function(e) {
-        console.log(e);
-        vm = this;
-        d = new Date(e.datetime);
-        e.places_left = e.places;
-        e.id = parseInt(Math.random() * 1000);
-        if (d.getMonth() == vm.month) {
-          if (vm.days[d.getDate()])
-            vm.days[d.getDate()].exams.push(e);
-          else
-            vm.days[d.getDate()] = {active: false, exams: [e]}
-        }
       },
       handleResponseError: function(error) {
         alert('произошла непредвиденная ошибка');

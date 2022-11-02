@@ -86,10 +86,7 @@ def get_exams_by_month(year_n, month_n):
     exams_json = defaultdict(lambda: [])
     for exam in exams:
         exam_day = exam.date.day
-        exam_json = exam.to_dict(only=('id', 'type_id', 'subject_id', 'places', 'price'))
-        participants = session.query(Registration).filter(Registration.exam_id == exam.id).all()
-        exam_json['places_left'] = exam.places - len(participants)
-        exam_json['datetime'] = mktime(exam.date.timetuple()) * 1000
+        exam_json = exam.to_json()
         if current_user.is_authenticated and current_user.role == User.ROLE_CLIENT:
             enrolled = session.query(Registration).filter(Registration.exam_id == exam.id,
                                                           Registration.user_id == current_user.id).first()
@@ -144,33 +141,27 @@ def order_exam(exam_id):
 @api_blueprint.route('/api/exam/', methods=['POST'])
 def create_exam():
     check_user_is_authenticated()
-
     if current_user.role == User.ROLE_CLIENT:
-        return make_response(jsonify({'error': 'invalid role'}), 405)
+        return make_response({'error': 'invalid role'}, 405)
 
     r = request.json
-    if 'date' not in r or 'type' not in r or 'subject' not in r or 'places' not in r or 'price' not in r:
+    exam = Exam()
+    try:
+        exam.type_id = r['type_id']
+        exam.places = r['places']
+        exam.subject_id = r['subject_id']
+        exam.price = r['price']
+        exam.date = datetime.fromtimestamp(r['datetime'] / 1000)
+    except KeyError:
         return make_response(jsonify({'error': 'missing argument'}), 400)
 
     session = db_session.create_session()
-    exam = Exam()
-    exam.type_id = r['type']
-    exam.places = r['places']
-    exam.subject_id = r['subject']
-    exam.price = r['price']
-    exam.date = datetime.utcfromtimestamp(r['date'])
     session.add(exam)
     session.commit()
-
-    resp = dict()
-    resp['id'] = exam.id
-    resp['title'] = exam.type.title
-    resp['places'] = exam.places
-    resp['participants'] = 0
-    resp['subject'] = exam.subject.title
-    resp['date'] = exam.date
+    exam_json = exam.to_json()
     session.close()
-    return make_response(jsonify({'exam': resp}), 200)
+
+    return make_response(exam_json, 200)
 
 
 @api_blueprint.route('/api/my/', methods=['GET'])

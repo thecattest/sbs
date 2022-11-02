@@ -2,6 +2,7 @@ import sqlalchemy
 from sqlalchemy import orm
 from data.db_session import SqlAlchemyBase
 from sqlalchemy_serializer import SerializerMixin
+from time import mktime
 
 
 class Exam(SqlAlchemyBase, SerializerMixin):
@@ -18,6 +19,12 @@ class Exam(SqlAlchemyBase, SerializerMixin):
     registrations = orm.relation("Registration", back_populates="exam")
     type = orm.relation("Type")
     subject = orm.relation("Subject")
+
+    def to_json(self):
+        exam_json = self.to_dict(only=('id', 'type_id', 'subject_id', 'places', 'price'))
+        exam_json['places_left'] = self.places - len(self.registrations)
+        exam_json['datetime'] = mktime(self.date.timetuple()) * 1000
+        return exam_json
 
     def __repr__(self):
         return f"<Exam {self.id} {self.type.title} {self.subject.title} {self.date} {self.places} {self.price}>"
