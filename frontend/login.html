@@ -83,7 +83,7 @@
             vm.handleResponseError(error);
             if (error.response.status == 404)
               this.phoneMsg = 'номер телефона не найден';
-        });
+          });
       },
       login: function() {
         axios.post('/api/login', {'phone': this.phone, 'code': Number(this.code)})
@@ -98,7 +98,7 @@
             vm.handleResponseError(error);
             if (error.response.status == 403)
               this.codeMsg = 'неверный код';
-        });
+          });
       },
       handleResponseError: function (error) {
         console.log(error.toJSON());
