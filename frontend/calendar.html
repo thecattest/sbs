@@ -519,18 +519,18 @@
     },
     template: `
       <div class="exam-list-item">
-        <div class="exam-list-item-header d-flex align-items-center justify-content-between">
+        <div class="exam-list-item-header d-flex align-items-center justify-content-between mb-1">
           <div>
             <span class="tag" :class="tagClass">{{ constants[exam.type_id].title }}</span>
             {{constants[exam.type_id].subjects[exam.subject_id]}}
           </div>
-          <span v-if="admin"
+          <span v-if="admin && exam.places == exam.places_left"
             data-bs-toggle="modal" data-bs-target="#deleteExamModal"
             class="material-symbols-outlined icon-btn"
             @click="prepareForDeletion"
           >delete</span>
         </div>
-        <div class="exam-list-item-body">
+        <div class="exam-list-item-body mb-2">
           {{ d.getHours() }}:{{ String(d.getMinutes()).padStart(2, '0') }}, {{ exam.price }}₽
         </div>
         <div class="exam-list-item-footer d-flex justify-content-end">
@@ -586,7 +586,9 @@
         }
       },
       placesCaption: function() {
-        return this.exam.places_left == 0 ? "мест нет :(" : this.exam.places_left + " " + this.ending;
+        if (this.admin)
+          return this.exam.places - this.exam.places_left + '/' + this.exam.places + ' ' + this.ending + ' занято';
+        return this.exam.places_left == 0 ? "мест нет :(" : 'ещё ' + this.exam.places_left + " " + this.ending;
       }
     }
   });
@@ -624,7 +626,7 @@
             Добавить <span class="material-symbols-outlined icon-btn ms-1 mt-0">add</span>
           </button>
         </div>
-        <div class="exam-list-day" :class="{'msg m-2': day === -1}">
+        <div class="exam-list-day" :class="{'msg m-2 mt-3': day === -1}">
           <template v-if="day !== -1">
             {{ day }} {{ months[month] }}
           </template>
@@ -731,6 +733,21 @@
             vm.handleResponseError(error);
           });
       },
+      deleteExam: function() {
+        const vm = this;
+        axios.delete('/api/exam/' + this.toDelete)
+          .then(response => {
+            if (response.status == 200) {
+              this.days[this.activeDay].exams = this.days[this.activeDay].exams.filter(e => e.id != this.toDelete);
+              if (!this.activeExams.length)
+                this.selectDay(-1);
+              this.prepareForDeletion(-1);
+            }
+          })
+          .catch(error => {
+            vm.handleResponseError(error);
+          });
+      },
       getAttendeesExam: function(examId) {
         return this.activeExams.filter(e => e.id == examId)[0];
       },
@@ -775,12 +792,6 @@
       },
       prepareForDeletion: function(examId) {
         this.toDelete = examId;
-      },
-      deleteExam: function() {
-        this.days[this.activeDay].exams = this.days[this.activeDay].exams.filter(e => e.id != this.toDelete);
-        if (!this.activeExams.length)
-          this.selectDay(-1);
-        this.prepareForDeletion(-1);
       },
       handleResponseError: function(error) {
         alert('произошла непредвиденная ошибка');

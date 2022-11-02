@@ -260,7 +260,7 @@ def unregister(exam_id):
     check_user_is_authenticated()
 
     session = db_session.create_session()
-    exam: Exam = session.query(Exam).filter(Exam.id == exam_id).first()
+    exam: Exam = session.query(Exam).get(exam_id)
     if current_user.role == User.ROLE_CLIENT:
 
         if exam.date < datetime.now():
