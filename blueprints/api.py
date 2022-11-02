@@ -4,8 +4,11 @@ from flask_login import current_user, login_user, login_required
 import re
 from .methods import *
 from .settings import *
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
+from time import mktime
+
+from collections import defaultdict
+
 
 api_blueprint = Blueprint('api', __name__)
 
@@ -76,37 +79,27 @@ def get_exams_by_month(year_n, month_n):
     if month_n not in range(0, 12):
         return make_response(jsonify({'error': 'month does not exist'}), 400)
 
-    response = dict()
     session = db_session.create_session()
     start_time, end_time = get_first_and_last_month_day(year_n, month_n)
+
     exams = session.query(Exam).filter(Exam.date >= start_time, Exam.date <= end_time).all()
-    exams_resp = dict()
-    for i in exams:
-        exam: Exam = i
+    exams_json = defaultdict(lambda: [])
+    for exam in exams:
         exam_day = exam.date.day
-        resp = dict()
-        resp['id'] = exam.id
-        resp['title'] = exam.type.title
-        resp['places'] = exam.places
+        exam_json = exam.to_dict(only=('id', 'type_id', 'subject_id', 'places', 'price'))
         participants = session.query(Registration).filter(Registration.exam_id == exam.id).all()
-        resp['participants'] = len(participants)
-        resp['subject'] = exam.subject.title
-        resp['date'] = exam.date
-        if exam_day in exams_resp:
-            exams_resp[exam_day].append(resp)
-        else:
-            exams_resp[exam_day] = [resp]
-        response['exams'] = exams_resp
-        if current_user.is_authenticated:
-            response['user_role'] = current_user.role
-            if current_user.role == User.ROLE_CLIENT:
-                is_registered = session.query(Registration).filter(Registration.exam_id == exam.id,
-                                                                   Registration.user_id == current_user.id).first()
-                is_registered = False if is_registered is None else True
-                response['registered'] = is_registered
-        else:
-            response['user_role'] = User.ROLE_CLIENT
-        return make_response(response, 200)
+        exam_json['places_left'] = exam.places - len(participants)
+        exam_json['datetime'] = mktime(exam.date.timetuple()) * 1000
+        if current_user.is_authenticated and current_user.role == User.ROLE_CLIENT:
+            enrolled = session.query(Registration).filter(Registration.exam_id == exam.id,
+                                                          Registration.user_id == current_user.id).first()
+            exam_json['enrolled'] = enrolled is not None
+        exams_json[exam_day].append(exam_json)
+
+    response = {'exams': exams_json}
+    if current_user.is_authenticated:
+        response['user_role'] = current_user.role
+    return make_response(response, 200)
 
 
 @api_blueprint.route('/api/exam/<exam_id>', methods=['POST'])
