@@ -6,12 +6,12 @@ body {
   background-color: transparent;
 }
 
-@font-face {
+/* @font-face {
   font-family: 'Material Symbols Outlined';
   font-style: normal;
   font-weight: 100 700;
   src: url(google-icons.woff2) format('woff2');
-}
+} */
 
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
@@ -102,6 +102,7 @@ body {
   cursor: pointer;
   color: #666666;
   margin: 0 -5px;
+  font-size: 34px!important;
 }
 .calendar-month-step:hover {color: initial;}
 
@@ -216,4 +217,12 @@ position: initial;
 
 .loading-card-no-bg {
   background-color: inherit;
+}
+
+.header-btn {
+  text-decoration: none;
+}
+
+.header-btn:hover {
+  text-decoration: underline;
 }

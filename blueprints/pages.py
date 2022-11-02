@@ -30,3 +30,4 @@ def page_login():
 @login_required
 def page_logout():
     logout_user()
+    return redirect('/')
