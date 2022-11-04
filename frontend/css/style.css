@@ -249,7 +249,10 @@ position: initial;
 
   .card-invisible { display: none }
 
-  .side-container { order: 0 }
+  .side-container {
+    order: 0;
+    margin-right: 10px;
+  }
 
   .main-container { order: 1 }
 
