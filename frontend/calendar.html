@@ -18,12 +18,12 @@
 </head>
 <body>
   <div class="container my-4" id="app">
-    <div class="m-3 d-flex align-items-center justify-content-between">
-      <h2>Календарь мероприятий</h2>
-      <a v-if="role" class="header-btn" href="/logout">Выйти из аккаунта</a>
-      <a v-else class="header-btn" href="/login">Войти в аккаунт</a>
+    <div class="my-3 mx-2 gx-2 row d-flex align-items-center justify-content-between">
+      <h2 class="col-auto">Календарь мероприятий</h2>
+      <a v-if="role" class="col-auto header-btn" href="/logout">Выйти из аккаунта</a>
+      <a v-else class="col-auto header-btn" href="/login">Войти в аккаунт</a>
     </div>
-    <div class="container py-3">
+    <div class="mb-3">
       <div class="overlay" v-if="loading">
         <div class="loading-card p-4 d-flex flex-column justify-content-between align-items-center">
           <div class="spinner-border text-primary"></div>
@@ -31,8 +31,9 @@
         </div>
       </div>
 
-      <div class="row gy-3" v-if="!loading">
-        <div class="col-12 order-2 order-md-1 offset-md-4 col-md-4 flex-column">
+      <div class="d-flex justify-content-center" v-if="!loading" id="content">
+        <div class="card card-invisible"></div>
+        <div class="main-container d-flex flex-column">
           <calendar :select="selectDay" @step="step" :year="year" :month="month"
             :days="filteredDays" :constants="constants" :admin="isAdmin" :client="isClient"
           ></calendar>
@@ -43,7 +44,7 @@
             :month="month" :constants="constants"
           ></exam-list>
         </div>
-        <div class="col-12 order-1 order-md-2 col-md-3">
+        <div class="side-container">
           <filters @select-type="selectType" @select-subjects="selectSubjects" :constants="constants"></filters>
         </div>
       </div>
@@ -214,7 +215,7 @@
       }
     },
     template: `
-      <div class="card filters">
+      <div class="card filters mb-3">
         <h4>Фильтры</h4>
         <div class="btn-group">
           <button @click="selectType(t[1])" type="button" v-for="t in types" :key="t[1]"

@@ -96,6 +96,8 @@ body {
   padding: 20px;
   border-radius: 10px;
   background-color: white;
+  max-width: 330px;
+  min-width: 250px;
 }
 
 .calendar-month-step {
@@ -225,4 +227,36 @@ position: initial;
 
 .header-btn:hover {
   text-decoration: underline;
+}
+
+.main-container, .side-container {
+  margin: 0 10px;
+}
+
+.side-container {
+  margin-right: 0;
+}
+
+.card-invisible {
+  height: 0;
+  padding: 0;
+  margin: 0;
+  margin-right: 10px;
+  border: none;
+}
+
+@media screen and (max-width: 950px) {
+
+  .card-invisible { display: none }
+
+  .side-container { order: 0 }
+
+  .main-container { order: 1 }
+
+  #content {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .filters { min-width: 330px }
 }
