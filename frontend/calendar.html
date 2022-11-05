@@ -39,7 +39,7 @@
           ></calendar>
           <exam-list
             :enroll="enroll" :admin="isAdmin" :client="isClient"
-            :day="activeDay" :exams="activeExams" :open-attendees="openAttendees"
+            :day="activeDay" :exams="activeExams" :open-participants="openParticipants"
             :prepare-for-deletion="prepareForDeletion"
             :month="month" :constants="constants"
           ></exam-list>
@@ -52,10 +52,10 @@
         </div>
       </div>
 
-      <attendees-modal v-if="isAdmin && !loading"
-        @save="saveAttendees"
-        :exam="attendeesExam" :constants="constants"
-      ></attendees-modal>
+      <participants-modal v-if="isAdmin && !loading"
+        @save="saveParticipants"
+        :exam="participantsExam" :constants="constants"
+      ></participants-modal>
       <confirmation-modal v-if="isAdmin && !loading"
         mid="deleteExamModal" title="Вы уверены, что хотите удалить экзамен?"
         btn-class="btn-danger" btn-text="Удалить" @confirmed="deleteExam"
@@ -262,22 +262,22 @@
     }
   });
 
-  Vue.component('attendees-modal', {
+  Vue.component('participants-modal', {
     props: {
       constants: Object,
       exam: Object
     },
     data: function() {
       return {
-        attendees: []
+        participants: []
       }
     },
     template: `
-    <div class="modal fade" id="attendeesModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal fade" id="participantsModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-sm">
         <div class="modal-content" v-if="exam">
           <div class="modal-header">
-            <div class="modal-title attendees-modal-header">
+            <div class="modal-title participants-modal-header">
               <span class="tag" :class="tagClass">{{ constants[exam.type_id].title }}</span>
               {{constants[exam.type_id].subjects[exam.subject_id]}}
             </div>
@@ -285,9 +285,9 @@
           </div>
           <div class="modal-body">
             <div class="mb-2">Отметить присутствующих: </div>
-            <div class="attendees-modal-list mx-2">
-              <div class="form-check" v-for="a in exam.attendees" :key="a.id">
-                <input class="form-check-input" type="checkbox" :value="a.id" :id="'attendee' + a.id" v-model="attendees" />
+            <div class="participants-modal-list mx-2">
+              <div class="form-check" v-for="a in exam.participants" :key="a.id">
+                <input class="form-check-input" type="checkbox" :value="a.id" :id="'attendee' + a.id" v-model="participants" />
                 <label class="form-check-label" :for="'attendee' + a.id">
                   {{formatPhone(a.phone)}}
                 </label>
@@ -304,7 +304,7 @@
     `,
     methods: {
       save: function() {
-        this.$emit('save', this.attendeesToSave);
+        this.$emit('save', this.participantsToSave);
       },
       formatPhone: function(p) {
         p = String(p);
@@ -315,15 +315,18 @@
       tagClass: function() {
         return "exam"+Object.keys(this.constants).indexOf(String(this.exam.type_id));
       },
-      attendeesToSave: function() {
-        return this.exam.attendees.map(a => {
-          return {id: a.id, visited: this.attendees.indexOf(a.id) !== -1}
+      participantsToSave: function() {
+        participants = {};
+        vm = this;
+        vm.exam.participants.forEach(p => {
+          participants[p.id] = vm.participants.indexOf(p.id) !== -1
         });
+        return participants;
       }
     },
     watch: {
       exam: function() {
-        this.attendees = this.exam.attendees.filter(a => a.visited).map(a => a.id);
+        this.participants = this.exam.participants.filter(a => a.visited).map(a => a.id);
       }
     }
   });
@@ -545,8 +548,9 @@
               class="btn btn-sm btn-danger" @click="prepareForDeletion"
               data-bs-toggle="modal" data-bs-target="#deleteExamModal"
             >Выписаться</button>
-            <button type="button" v-else-if="admin"
-              class="btn btn-sm btn-secondary" @click="openAttendees" data-bs-toggle="modal" data-bs-target="#attendeesModal"
+            <button type="button" v-else-if="admin && exam.places_left != exam.places"
+              class="btn btn-sm btn-secondary" @click="openParticipants"
+              data-bs-toggle="modal" data-bs-target="#participantsModal"
             >Участники</button>
             <button type="button" class="btn btn-sm btn-primary-outline disabled">
               {{placesCaption}}
@@ -559,8 +563,8 @@
       enroll: function() {
         this.$emit("enroll", this.exam.id)
       },
-      openAttendees: function() {
-        this.$emit("openAttendees", this.exam.id)
+      openParticipants: function() {
+        this.$emit("openParticipants", this.exam.id)
       },
       prepareForDeletion: function() {
         this.$emit('prepareForDeletion', this.exam.id);
@@ -612,7 +616,7 @@
       exams: Array,
       constants: Object,
       enroll: Function,
-      openAttendees: Function,
+      openParticipants: Function,
       prepareForDeletion: Function,
       admin: Boolean,
       client: Boolean,
@@ -648,7 +652,7 @@
         <div class="exam-list-body">
           <exam-list-item
             v-for="(e, i) in exams" :key="i" :exam="e" :constants="constants"
-            @enroll="enroll" @openAttendees="openAttendees" @prepareForDeletion="prepareForDeletion"
+            @enroll="enroll" @openParticipants="openParticipants" @prepareForDeletion="prepareForDeletion"
             :admin="admin" :client="client"
           ></exam-list-item>
         </div>
@@ -673,7 +677,7 @@
         client: 0,
         admin: 1,
       },
-      attendeesExam: undefined,
+      participantsExam: undefined,
       toDelete: -1
     },
     methods: {
@@ -754,22 +758,13 @@
         axios.delete('/api/exam/' + this.toDelete)
           .then(response => {
             if (response.status == 200) {
-              if (vm.role == vm.roles.admin) {
-                vm.days[vm.activeDay].exams = vm.days[vm.activeDay].exams.filter(e => e.id != vm.toDelete);
-                if (!vm.activeExams.length)
-                  vm.selectDay(-1);
-              } else if (vm.role == vm.roles.client) {
-                vm.getDays(vm.activeDay);
-              }
+              vm.getDays(vm.activeDay);
               this.prepareForDeletion(-1);
             }
           })
           .catch(error => {
             vm.handleResponseError(error);
           });
-      },
-      getAttendeesExam: function(examId) {
-        return this.activeExams.filter(e => e.id == examId)[0];
       },
       selectType: function(typeId) {
         if (this.selectedTypeId != typeId) {
@@ -791,30 +786,35 @@
         const vm = this;
         axios.post('/api/exam/' + examId)
           .then(response => {
-            if (response.status == 200) {
+            if (response.status == 200)
               vm.getDays(vm.activeDay);
+          })
+          .catch(error => {
+            vm.handleResponseError(error);
+          });
+      },
+      openParticipants: function(examId) {
+        const vm = this;
+        axios.get('/api/exam/' + examId)
+          .then(response => {
+            if (response.status == 200) {
+              vm.participantsExam = response.data;
             }
           })
           .catch(error => {
             vm.handleResponseError(error);
           });
       },
-      openAttendees: function(examId) {
-        this.attendeesExam = this.getAttendeesExam(examId);
-        this.attendeesExam.attendees = [
-          {id: 123, phone: 79001201235, visited: false},
-          {id: 124, phone: 79001345235, visited: false},
-          {id: 125, phone: 79750127635, visited: true},
-          {id: 126, phone: 79897376473, visited: false},
-          {id: 127, phone: 79563926746, visited: true},
-          {id: 128, phone: 79363267472, visited: true},
-          {id: 129, phone: 79767645345, visited: true},
-          {id: 130, phone: 79367278364, visited: false},
-          {id: 131, phone: 79828727863, visited: true},
-        ]
-      },
-      saveAttendees: function(attendees) {
-        console.log('save', attendees);
+      saveParticipants: function(participants) {
+        const vm = this;
+        axios.put('/api/exam/' + vm.participantsExam.id, {'participants': participants})
+          .then(response => {
+            if (response.status == 200)
+              vm.getDays(vm.activeDay);
+          })
+          .catch(error => {
+            vm.handleResponseError(error);
+          });
       },
       prepareForDeletion: function(examId) {
         this.toDelete = examId;

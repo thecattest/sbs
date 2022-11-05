@@ -202,20 +202,17 @@ def get_exam_by_id(exam_id):
     if exam is None:
         return make_response(jsonify({'error': 'exam does not exist'}), 404)
 
-    response = dict()
-    response['id'] = exam.id
-    response['type'] = exam.type_id
-    response['subject'] = exam.subject.title
-    response['date'] = exam.date
-    response['price'] = exam.price
-
+    exam_json = exam.to_json()
     participants = session.query(Registration).filter(Registration.exam_id == exam_id).all()
-    list_of_participants = []
-    for i in participants:
-        participant: Registration = i
-        list_of_participants.append([participant.user.phone, participant.user.id])
-    response['participants'] = list_of_participants
-    return make_response(jsonify(response), 200)
+    exam_json['participants'] = [
+        {
+            'phone': p.user.phone,
+            'id': p.user.id,
+            'visited': p.visited
+        } for p in participants
+    ]
+
+    return make_response(exam_json, 200)
 
 
 @api_blueprint.route('/api/constants/', methods=['GET'])
@@ -240,15 +237,15 @@ def set_visited(exam_id):
         return make_response(jsonify({'error': 'invalid role'}), 403)
 
     r = request.json
-    if 'attendees' not in r:
+    if 'participants' not in r:
         return make_response(jsonify({'error': 'missing argument'}), 400)
 
     session = db_session.create_session()
 
-    for i in r['attendees'].keys():
+    for i in r['participants'].keys():
         reg: Registration = session.query(Registration).filter(Registration.exam_id == exam_id,
                                                                Registration.user_id == i).first()
-        reg.visited = r['attendees'][i]
+        reg.visited = r['participants'][i]
         session.commit()
 
     session.close()
