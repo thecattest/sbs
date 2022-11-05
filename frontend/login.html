@@ -26,8 +26,8 @@
             <label for="phone" class="form-label">Номер телефона</label>
             <div class="input-group input-group-sm-">
               <div class="input-group-text">+7</div>
-              <input type="text" class="form-control form-control-sm-" id="phone"
-                placeholder="9001203040" v-model="phone" :disabled="codeSent"
+              <input type="text" class="form-control form-control-sm-" id="phone" autofocus
+                placeholder="9001203040" v-model="phone" :disabled="codeSent" v-on:keyup.enter="sendCode"
               >
               <small v-if="codeSent" @click="editPhone" class="input-group-text edit-phone d-flex align-items-center">
                 <!-- <span>изменить</span> -->
@@ -39,7 +39,7 @@
           <div class="mb-3" v-show="codeSent">
             <label for="code" class="form-label">Проверочный код</label>
             <input type="text" class="form-control form-control-sm-" id="code"
-              placeholder="1234" v-model="code"
+              placeholder="1234" v-model="code" v-on:keyup.enter="login" ref="code"
             >
             <small class="invalid" v-show="codeMsg">{{ codeMsg }}</small>
           </div>
@@ -77,6 +77,7 @@
             if (status == 204) {
               vm.codeSent = true;
               vm.phoneMsg = '';
+              vm.$nextTick(() => vm.$refs.code.focus());
             }
           })
           .catch(error => {
