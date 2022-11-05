@@ -114,7 +114,7 @@ def order_exam(exam_id):
     if len(participants) >= exam.places:
         return make_response(jsonify({'error': 'places are over'}), 403)
 
-    if (datetime.now() - exam.date).days < 3:
+    if (exam.date - datetime.now()).days < 3:
         return make_response(jsonify({'error': 'registration are closed'}), 403)
 
     already_ordered = session.query(Registration).filter(Registration.exam_id == exam_id,
@@ -266,28 +266,22 @@ def unregister(exam_id):
         if exam.date < datetime.now():
             return make_response(jsonify({'error': 'exam is over'}), 403)
 
-        is_participant = session.query(Registration).filter(Registration.exam_id == exam_id,
-                                                            Registration.user_id == current_user.id).first()
-        if is_participant is None:
+        registration = session.query(Registration).filter(Registration.exam_id == exam_id,
+                                                          Registration.user_id == current_user.id).first()
+        if registration is None:
             make_response(jsonify({'error': 'not registered'}), 403)
         else:
-            resp = dict()
-            session.delete(is_participant)
+            session.delete(registration)
             session.commit()
-            resp['id'] = exam.id
-            resp['title'] = exam.type.title
-            resp['places'] = exam.places
-            participants = session.query(Registration).filter(Registration.exam_id == exam.id).all()
-            resp['participants'] = len(participants)
-            resp['subject'] = exam.subject.title
-            resp['date'] = exam.date
-            return make_response(jsonify(resp), 200)
+            exam_json = exam.to_json()
+            session.close()
+            return make_response(exam_json, 200)
+    else:
+        participants = session.query(Registration).filter(Registration.exam_id == exam.id).all()
+        if len(participants) > 0:
+            return make_response(jsonify({'error': 'list of participants is not empty'}), 403)
 
-    participants = session.query(Registration).filter(Registration.exam_id == exam.id).all()
-    if len(participants) > 0:
-        return make_response(jsonify({'error': 'list of participants is not empty'}), 403)
-
-    session.delete(exam)
-    session.commit()
-    session.close()
-    return make_response(jsonify({'ok': 'true'}), 200)
+        session.delete(exam)
+        session.commit()
+        session.close()
+        return make_response(jsonify({'ok': 'true'}), 200)

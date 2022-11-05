@@ -20,7 +20,7 @@
   <div class="container my-4" id="app">
     <div class="my-3 mx-2 gx-2 row d-flex align-items-center justify-content-between">
       <h2 class="col-auto">Календарь мероприятий</h2>
-      <a v-if="role" class="col-auto header-btn" href="/logout">Выйти из аккаунта</a>
+      <a v-if="role !== undefined" class="col-auto header-btn" href="/logout">Выйти из аккаунта</a>
       <a v-else class="col-auto header-btn" href="/login">Войти в аккаунт</a>
     </div>
     <div class="mb-3">
@@ -38,14 +38,17 @@
             :days="filteredDays" :constants="constants" :admin="isAdmin" :client="isClient"
           ></calendar>
           <exam-list
-            :enroll="enroll" :sign-out="signOut" :admin="isAdmin" :client="isClient"
+            :enroll="enroll" :admin="isAdmin" :client="isClient"
             :day="activeDay" :exams="activeExams" :open-attendees="openAttendees"
             :prepare-for-deletion="prepareForDeletion"
             :month="month" :constants="constants"
           ></exam-list>
         </div>
         <div class="side-container">
-          <filters @select-type="selectType" @select-subjects="selectSubjects" :constants="constants"></filters>
+          <filters
+            @select-type="selectType" @select-subject="selectSubject"
+            :constants="constants" :selected-type-id="selectedTypeId" :selected-subjects="selectedSubjects"
+          ></filters>
         </div>
       </div>
 
@@ -56,6 +59,10 @@
       <confirmation-modal v-if="isAdmin && !loading"
         mid="deleteExamModal" title="Вы уверены, что хотите удалить экзамен?"
         btn-class="btn-danger" btn-text="Удалить" @confirmed="deleteExam"
+      ></confirmation-modal>
+      <confirmation-modal v-if="isClient && !loading"
+        mid="deleteExamModal" title="Вы уверены, что хотите выписаться с экзамена?"
+        btn-class="btn-danger" btn-text="Выписаться" @confirmed="deleteExam"
       ></confirmation-modal>
       <new-exam-modal v-if="isAdmin && !loading" @add-exam="addExam"
         :constants="constants" :year="year" :month="month" :day="activeDay" :type-id="selectedTypeId"
@@ -206,13 +213,9 @@
 
   Vue.component('filters', {
     props: {
-      constants: Object
-    },
-    data: function() {
-      return {
-        selectedTypeId: -1,
-        selectedSubjects: []
-      }
+      constants: Object,
+      selectedTypeId: Number,
+      selectedSubjects: Array
     },
     template: `
       <div class="card filters mb-3">
@@ -226,7 +229,8 @@
         </div>
         <div class="filter-subjects" v-if="selectedTypeId != -1">
           <div class="form-check" v-for="s in subjects" :key="s[1]">
-            <input class="form-check-input" type="checkbox" :value="s[1]" :id="'subject' + s[1]" v-model="selectedSubjects" />
+            <input class="form-check-input" type="checkbox" :value="s[1]" :id="'subject' + s[1]"
+              :checked="subjectChecked(s[1])" @click="toggleSubject(s[1])" />
             <label class="form-check-label" :for="'subject' + s[1]">
               {{s[0]}}
             </label>
@@ -236,9 +240,13 @@
     `,
     methods: {
       selectType: function(typeId) {
-        this.selectedTypeId = typeId;
-        this.selectedSubjects = [];
         this.$emit("select-type", typeId);
+      },
+      toggleSubject: function(subjectId) {
+        this.$emit("select-subject", subjectId);
+      },
+      subjectChecked: function(subjectId) {
+        return this.selectedSubjects.indexOf(subjectId) !== -1;
       },
       typeSelectorClass: function(i) {
         return this.selectedTypeId == i ? "btn-success" : "btn-light";
@@ -250,11 +258,6 @@
       },
       subjects: function() {
         return Object.keys(this.constants[this.selectedTypeId].subjects).map(k => [this.constants[this.selectedTypeId].subjects[k], k])
-      }
-    },
-    watch: {
-      selectedSubjects: function() {
-        this.$emit("select-subjects", this.selectedSubjects);
       }
     }
   });
@@ -514,8 +517,7 @@
           'января', 'февраля', 'марта', 'апреля',
           'май', 'июня', 'июля', 'августа',
           'сентября', 'октября', 'ноября', 'декабря',
-        ],
-        d: new Date(this.exam.datetime)
+        ]
       }
     },
     template: `
@@ -536,12 +538,13 @@
         </div>
         <div class="exam-list-item-footer d-flex justify-content-end">
           <div class="btn-group">
-            <button type="button" v-if="exam.places_left && !exam.enrolled && client"
+            <button type="button" v-if="exam.places_left && client && !exam.enrolled && !enrollmentClosed"
               class="btn btn-sm btn-primary" @click="enroll"
             >Записаться</button>
             <button type="button" v-else-if="exam.enrolled && client"
-              class="btn btn-sm btn-danger" @click="signOut"
-            >Отписаться</button>
+              class="btn btn-sm btn-danger" @click="prepareForDeletion"
+              data-bs-toggle="modal" data-bs-target="#deleteExamModal"
+            >Выписаться</button>
             <button type="button" v-else-if="admin"
               class="btn btn-sm btn-secondary" @click="openAttendees" data-bs-toggle="modal" data-bs-target="#attendeesModal"
             >Участники</button>
@@ -556,9 +559,6 @@
       enroll: function() {
         this.$emit("enroll", this.exam.id)
       },
-      signOut: function() {
-        this.$emit("sign-out", this.exam.id)
-      },
       openAttendees: function() {
         this.$emit("openAttendees", this.exam.id)
       },
@@ -569,6 +569,12 @@
     computed: {
       tagClass: function() {
         return "exam"+Object.keys(this.constants).indexOf(String(this.exam.type_id));
+      },
+      d: function() {
+        // if (this.datetime === undefined)
+        //   this.datetime = new Date(this.exam.datetime);
+        // return this.datetime;
+        return new Date(this.exam.datetime);
       },
       ending: function() {
         var n = this.exam.places_left;
@@ -586,9 +592,14 @@
           }
         }
       },
+      enrollmentClosed: function() {
+        return Math.floor((this.d - new Date()) / 86400000) < 3;
+      },
       placesCaption: function() {
         if (this.admin)
           return this.exam.places - this.exam.places_left + '/' + this.exam.places + ' ' + this.ending + ' занято';
+        if (this.enrollmentClosed)
+          return 'запись закрыта';
         return this.exam.places_left == 0 ? "мест нет :(" : 'ещё ' + this.exam.places_left + " " + this.ending;
       }
     }
@@ -601,7 +612,6 @@
       exams: Array,
       constants: Object,
       enroll: Function,
-      signOut: Function,
       openAttendees: Function,
       prepareForDeletion: Function,
       admin: Boolean,
@@ -638,7 +648,7 @@
         <div class="exam-list-body">
           <exam-list-item
             v-for="(e, i) in exams" :key="i" :exam="e" :constants="constants"
-            @enroll="enroll" @sign-out="signOut" @openAttendees="openAttendees" @prepareForDeletion="prepareForDeletion"
+            @enroll="enroll" @openAttendees="openAttendees" @prepareForDeletion="prepareForDeletion"
             :admin="admin" :client="client"
           ></exam-list-item>
         </div>
@@ -693,9 +703,11 @@
             if (response.status == 200)
               vm.constants = response.data;
           })
-          .catch(vm.handleResponseError);
+          .catch(error => {
+            vm.handleResponseError(error);
+          });
       },
-      getDays: function() {
+      getDays: function(dayN=-1) {
         const vm = this;
         vm.days = undefined;
         axios.get('/api/exams/' + this.year + '/' + this.month)
@@ -711,9 +723,12 @@
                 }
               });
               vm.days = days;
+              vm.selectDay(dayN);
             }
           })
-          .catch(vm.handleResponseError);
+          .catch(error => {
+            vm.handleResponseError(error);
+          });
       },
       addExam: function(exam) {
         d = new Date(e.datetime);
@@ -739,9 +754,13 @@
         axios.delete('/api/exam/' + this.toDelete)
           .then(response => {
             if (response.status == 200) {
-              this.days[this.activeDay].exams = this.days[this.activeDay].exams.filter(e => e.id != this.toDelete);
-              if (!this.activeExams.length)
-                this.selectDay(-1);
+              if (vm.role == vm.roles.admin) {
+                vm.days[vm.activeDay].exams = vm.days[vm.activeDay].exams.filter(e => e.id != vm.toDelete);
+                if (!vm.activeExams.length)
+                  vm.selectDay(-1);
+              } else if (vm.role == vm.roles.client) {
+                vm.getDays(vm.activeDay);
+              }
               this.prepareForDeletion(-1);
             }
           })
@@ -753,26 +772,32 @@
         return this.activeExams.filter(e => e.id == examId)[0];
       },
       selectType: function(typeId) {
-        this.selectedTypeId = Number(typeId);
+        if (this.selectedTypeId != typeId) {
+          this.selectedTypeId = Number(typeId);
+          this.selectedSubjects = [];
+        }
         if (!this.activeExams.length)
           this.selectDay(-1);
       },
-      selectSubjects: function(subjects) {
-        this.selectedSubjects = subjects;
+      selectSubject: function(subjectId) {
+        if (this.selectedSubjects.indexOf(subjectId) === -1)
+          this.selectedSubjects.push(subjectId);
+        else
+          this.selectedSubjects.splice(this.selectedSubjects.indexOf(subjectId), 1);
         if (!this.activeExams.length)
           this.selectDay(-1);
       },
       enroll: function(examId) {
-        this.days[this.activeDay].exams.forEach(e => {
-          e.enrolled = e.enrolled || e.id == examId;
-          if (e.id == examId) e.places_left -= 1;
-        });
-      },
-      signOut: function(examId) {
-        this.days[this.activeDay].exams.forEach(e => {
-          e.enrolled = e.enrolled && e.id != examId;
-          if (e.id == examId) e.places_left += 1;
-        });
+        const vm = this;
+        axios.post('/api/exam/' + examId)
+          .then(response => {
+            if (response.status == 200) {
+              vm.getDays(vm.activeDay);
+            }
+          })
+          .catch(error => {
+            vm.handleResponseError(error);
+          });
       },
       openAttendees: function(examId) {
         this.attendeesExam = this.getAttendeesExam(examId);
@@ -795,7 +820,11 @@
         this.toDelete = examId;
       },
       handleResponseError: function(error) {
-        alert('произошла непредвиденная ошибка');
+        console.log(error);
+        if (error && error.response.data && error.response.data.error)
+          alert(error.response.data.error);
+        else
+          alert('произошла непредвиденная ошибка');
         console.log(error.toJSON());
         console.log(error.response.data);
       }
