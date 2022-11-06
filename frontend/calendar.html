@@ -450,6 +450,7 @@
       updateStartDate: function() {
         this.datepicker.setStartDate(this.startDate);
         this.datepicker.setEndDate(this.startDate);
+        this.exam.datetime = this.datepicker.startDate.unix() * 1000;
       }
     },
     computed: {
