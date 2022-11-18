@@ -185,7 +185,7 @@
         firstDay = new Date(this.year, this.month);
         // первый день в первой неделе текущего календаря
         currentDay = firstDay;
-        currentDay.setDate(firstDay.getDate() - firstDay.getDay());
+        currentDay.setDate(firstDay.getDate() - firstDay.getDay() + 1);
         lastDay = currentDay;
         layout = [];
         flag = true;
