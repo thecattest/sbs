@@ -3,3 +3,4 @@ from api.pages import pages_blueprint
 from api.ExamListResource import ExamListResource
 from api.ExamResource import ExamResource
 from api.ParticipantsResource import ParticipantsResource
+from api.files import files_blueprint

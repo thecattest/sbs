@@ -6,3 +6,4 @@ Werkzeug==2.2.2
 PyMySQL==1.0.2
 waitress==2.1.2
 flask-restful==0.3.9
+XlsxWriter~=3.0.3
