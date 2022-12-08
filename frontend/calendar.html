@@ -60,6 +60,10 @@
         mid="deleteExamModal" title="Вы уверены, что хотите удалить экзамен?"
         btn-class="btn-danger" btn-text="Удалить" @confirmed="deleteExam"
       ></confirmation-modal>
+      <confirmation-modal v-if="!(isAdmin || isClient)"
+        mid="loginModal" title="Войдите в аккаунт, чтобы записаться"
+        btn-class="btn-primary" btn-text="Войти" @confirmed="login"
+      ></confirmation-modal>
       <confirmation-modal v-if="isClient && !loading"
         mid="deleteExamModal" title="Вы уверены, что хотите выписаться с экзамена?"
         btn-class="btn-danger" btn-text="Выписаться" @confirmed="deleteExam"
@@ -553,6 +557,9 @@
               class="btn btn-sm btn-secondary" @click="openParticipants"
               data-bs-toggle="modal" data-bs-target="#participantsModal"
             >Участники</button>
+            <button type="button" v-else-if="!(admin || client) && exam.places_left && !enrollmentClosed"
+              class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#loginModal"
+            >Записаться</button>
             <button type="button" class="btn btn-sm btn-primary-outline disabled">
               {{placesCaption}}
             </button>
@@ -685,6 +692,9 @@
       selectDay: function(dayN) {
         for (const [day, value] of Object.entries(this.days))
           this.days[day].active = day == dayN;
+      },
+      login: function() {
+        window.location.replace('login')
       },
       step: function(s) {
         m = this.month += s;
