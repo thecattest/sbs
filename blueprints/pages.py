@@ -21,6 +21,21 @@ def calendar():
     return send_from_directory(FRONTEND, 'calendar.html')
 
 
+@pages_blueprint.route('/exam')
+def exam():
+    return send_from_directory(FRONTEND, 'exam.html')
+
+
+@pages_blueprint.route('/administration')
+def administration():
+    return send_from_directory(FRONTEND, 'administration.html')
+
+
+@pages_blueprint.route('/register')
+def page_register():
+    return send_from_directory(FRONTEND, 'register.html')
+
+
 @pages_blueprint.route('/login')
 def page_login():
     return send_from_directory(FRONTEND, 'login.html')

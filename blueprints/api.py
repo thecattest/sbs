@@ -96,6 +96,12 @@ def get_exams_by_month(year_n, month_n):
     response = {'exams': exams_json}
     if current_user.is_authenticated:
         response['user_role'] = current_user.role
+        user_name = ''
+        if current_user.surname:
+            user_name += current_user.surname
+        if current_user.name:
+            user_name += ' ' + current_user.name
+        response['user_name'] = user_name
     return make_response(response, 200)
 
 
@@ -203,13 +209,16 @@ def get_exam_by_id(exam_id):
         return make_response(jsonify({'error': 'exam does not exist'}), 404)
 
     exam_json = exam.to_json()
-    participants = session.query(Registration).filter(Registration.exam_id == exam_id).all()
+    registrations = session.query(Registration).filter(Registration.exam_id == exam_id).all()
     exam_json['participants'] = [
         {
-            'phone': p.user.phone,
-            'id': p.user.id,
-            'visited': p.visited
-        } for p in participants
+            'phone': r.user.phone,
+            'id': r.user.id,
+            'surname': r.user.surname,
+            'name': r.user.name,
+            'secondname': r.user.secondname,
+            'visited': r.visited
+        } for r in registrations
     ]
 
     return make_response(exam_json, 200)
@@ -282,3 +291,39 @@ def unregister(exam_id):
         session.commit()
         session.close()
         return make_response(jsonify({'ok': 'true'}), 200)
+
+
+def get_users():
+    pass
+
+
+@api_blueprint.route('/api/register', methods=['POST'])
+def register():
+    r = request.json
+    if 'phone' not in r:
+        return make_response(jsonify({'error': 'missing argument'}), 400)
+
+    phone = r['phone']
+    if not check_phone_number(phone):
+        make_response({'error': 'invalid number'}, 400)
+
+    phone_f = format_phone_number(phone)
+    session = db_session.create_session()
+    exist_user: User = session.query(User).filter(User.phone == phone_f).first()
+
+    if exist_user is not None:
+        return make_response(jsonify({'error': 'user exists'}), 409)
+
+    if not all([k in r for k in ['surname', 'name', 'secondname']]):
+        return make_response({'error': 'missing argument'}, 400)
+
+    u = User()
+    u.phone = phone_f
+    u.surname = r['surname']
+    u.name = r['name']
+    u.secondname = r['secondname']
+    session.add(u)
+    session.commit()
+    session.close()
+
+    return make_response({'ok': 'true'}, 201)

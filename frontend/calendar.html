@@ -20,7 +20,7 @@
   <div class="container my-4" id="app">
     <div class="my-3 mx-2 gx-2 row d-flex align-items-center justify-content-between">
       <h2 class="col-auto">Календарь мероприятий</h2>
-      <a v-if="role !== undefined" class="col-auto header-btn" href="/logout">Выйти из аккаунта</a>
+      <span v-if="role !== undefined" class="col-auto">Вошли как <b>{{user_name}}</b> <a class="ms-1 header-btn" href="/logout">Выйти</a></span>
       <a v-else class="col-auto header-btn" href="/login">Войти в аккаунт</a>
     </div>
     <div class="mb-3">
@@ -278,7 +278,7 @@
     },
     template: `
     <div class="modal fade" id="participantsModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-sm">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-sm-">
         <div class="modal-content" v-if="exam">
           <div class="modal-header">
             <div class="modal-title participants-modal-header">
@@ -293,7 +293,7 @@
               <div class="form-check" v-for="a in exam.participants" :key="a.id">
                 <input class="form-check-input" type="checkbox" :value="a.id" :id="'attendee' + a.id" v-model="participants" />
                 <label class="form-check-label" :for="'attendee' + a.id">
-                  {{formatPhone(a.phone)}}
+                  {{a.surname}} {{a.name}} {{a.secondname}}
                 </label>
               </div>
             </div>
@@ -685,6 +685,7 @@
         client: 0,
         admin: 1,
       },
+      user_name: undefined,
       participantsExam: undefined,
       toDelete: -1
     },
@@ -730,6 +731,7 @@
             if (response.status == 200) {
               const data = response.data;
               vm.role = data.user_role;
+              vm.user_name = data.user_name;
               days = {}
               Object.keys(data.exams).forEach(day => {
                 days[day] = {

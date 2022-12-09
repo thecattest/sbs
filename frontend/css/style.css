@@ -245,6 +245,37 @@ position: initial;
   border: none;
 }
 
+.card-any-width {
+  max-width: initial;
+}
+
+thead td {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.action-link {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.action-link-danger {
+  color: #dc3545!important;
+}
+
+.action-link-danger:hover {
+  color: #bb2d3b!important;
+}
+
+.table-action {
+  margin-top: -3px;
+  margin-bottom: -1px;
+}
+
+.register-link {
+  font-size: 14px;
+}
+
 @media screen and (max-width: 950px) {
 
   .card-invisible { display: none }

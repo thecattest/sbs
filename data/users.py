@@ -14,6 +14,9 @@ class User(UserMixin, SqlAlchemyBase, SerializerMixin):
 
     id = sqlalchemy.Column(sqlalchemy.Integer,
                            primary_key=True, autoincrement=True)
+    surname = sqlalchemy.Column(sqlalchemy.TEXT, nullable=False)
+    name = sqlalchemy.Column(sqlalchemy.TEXT, nullable=True)
+    secondname = sqlalchemy.Column(sqlalchemy.TEXT, nullable=True)
     phone = sqlalchemy.Column(sqlalchemy.Integer, unique=True, nullable=False)
     sms_code = sqlalchemy.Column(sqlalchemy.Integer, nullable=True)
     sms_code_valid_thru = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)
@@ -32,6 +35,5 @@ class User(UserMixin, SqlAlchemyBase, SerializerMixin):
     def is_admin(self):
         return self.role == self.ROLE_ADMIN
 
-
     def __repr__(self):
-        return f"<User {self.id} {self.phone} {self.role}>"
+        return f"<User {self.id} {self.surname} {self.phone} {self.role}>"

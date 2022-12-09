@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Авторизация</title>
+  <title>Регистрация</title>
   <link rel="stylesheet" href="frontend/css/bootstrap.min.css">
   <link rel="stylesheet" href="frontend/css/style.css">
   <script src="frontend/js/bootstrap.min.js"></script>
@@ -18,7 +18,7 @@
 </head>
 <body>
   <div class="container my-4">
-    <h2 class="mx-3 my-2">Вход в аккаунт</h2>
+    <h2 class="mx-3 my-2">Регистрация</h2>
     <div class="container py-3" id="app">
       <div class="row justify-content-center">
         <div class="card col-xs-12 col-sm-8 col-md-6 col-lg-5">
@@ -27,31 +27,36 @@
             <div class="input-group input-group-sm-">
               <div class="input-group-text">+7</div>
               <input type="text" class="form-control form-control-sm-" id="phone" autofocus
-                placeholder="9001203040" v-model="phone" :disabled="codeSent" v-on:keyup.enter="sendCode"
+                placeholder="9001203040" v-model="phone"
               >
-              <small v-if="codeSent" @click="editPhone" class="input-group-text edit-phone d-flex align-items-center">
-                <!-- <span>изменить</span> -->
-                <span class="mt-0 ms-1 icon-btn material-symbols-outlined">edit</span>
-              </small>
             </div>
             <small class="invalid" v-show="phoneMsg">{{ phoneMsg }}</small>
           </div>
-          <div class="mb-3" v-show="codeSent">
-            <label for="code" class="form-label">Проверочный код</label>
-            <input type="text" class="form-control form-control-sm-" id="code"
-              placeholder="1234" v-model="code" v-on:keyup.enter="login" ref="code"
-            >
-            <small class="invalid" v-show="codeMsg">{{ codeMsg }}</small>
+          <div class="mb-3">
+            <label for="surname" class="form-label">Фамилия</label>
+              <input type="text" class="form-control form-control-sm-" id="surname"
+                placeholder="Федотов" v-model="surname"
+              >
+              <small class="invalid" v-show="surnameMsg">{{ surnameMsg }}</small>
+          </div>
+          <div class="mb-3">
+            <label for="name" class="form-label">Имя</label>
+              <input type="text" class="form-control form-control-sm-" id="name"
+                placeholder="Иван" v-model="name"
+              >
+              <small class="invalid" v-show="nameMsg">{{ nameMsg }}</small>
+          </div>
+          <div class="mb-3">
+            <label for="secondname" class="form-label">Отчество</label>
+              <input type="text" class="form-control form-control-sm-" id="secondname"
+                placeholder="Игоревич" v-model="secondname" @keyup.enter="register"
+              >
+              <small class="invalid" v-show="secondnameMsg">{{ secondnameMsg }}</small>
           </div>
           <div class="d-flex justify-content-end">
             <div class="d-flex align-items-center">
-              <a class='register-link me-2' href="/register">Зарегистрироваться</a>
-              <button type="button" class="btn btn-primary btn-sm"
-                :disabled="codeDisabled" v-if="!codeSent" @click="sendCode"
-              >Получить код</button>
-              <button type="button" class="btn btn-primary btn-sm"
-                v-show="codeSent" :disabled="loginDisabled" @click="login"
-              >Войти</button>
+              <button type="button" class="btn btn-success btn-sm" :disabled="registerDisabled" @click="register"
+              >Зарегистрироваться</button>
             </div>
           </div>
         </div>
@@ -66,51 +71,33 @@
     el: "#app",
     data: {
       phone: undefined,
+      surname: undefined,
+      name: undefined,
+      secondname: undefined,
       phoneMsg: '',
-      codeSent: false,
-      code: undefined,
-      codeMsg: ''
+      surnameMsg: '',
+      nameMsg: '',
+      secondnameMsg: ''
     },
     methods: {
-      sendCode: function() {
+      register: function() {
         vm = this;
-        axios.post('/api/code', {'phone': this.phone})
+        axios.post('/api/register', {'phone': this.phone, 'surname': this.surname, 'name': this.name, 'secondname': this.secondname})
           .then(response => {
             const status = response.status
-            if (status == 204) {
-              vm.codeSent = true;
-              vm.phoneMsg = '';
-              vm.$nextTick(() => vm.$refs.code.focus());
+            if (status == 201) {
+              window.location.replace('login');
             }
           })
           .catch(error => {
             vm.handleResponseError(error);
-            if (error.response.status == 404)
-              this.phoneMsg = 'номер телефона не найден';
-          });
-      },
-      login: function() {
-        axios.post('/api/login', {'phone': this.phone, 'code': Number(this.code)})
-          .then(response => {
-            const status = response.status
-            console.log(response.data);
-            if (status == 204) {
-              window.location.replace("calendar");
-            }
-          })
-          .catch(error => {
-            vm.handleResponseError(error);
-            if (error.response.status == 403)
-              this.codeMsg = 'неверный код';
+            if (error.response.status == 409)
+              this.phoneMsg = 'аккаунт с таким номером уже существует';
           });
       },
       handleResponseError: function (error) {
         console.log(error.toJSON());
         console.log(error.response.data);
-      },
-      editPhone: function() {
-        this.phone = undefined;
-        this.codeSent = false;
       }
     },
     watch: {
@@ -126,20 +113,28 @@
         if (p.length > 10) p = p.substring(0, 10) + ' ' + p.substring(10);
         this.phone = p;
       },
-      code: function() {
-        this.codeMsg = '';
-        c = this.code;
-        c = c.replaceAll(/[^\d]/g, '');
-        c = c.substring(0, 4);
-        this.code = c;
+      surname: function() {
+        this.surnameMsg = '';
+        s = this.surname;
+        s = s.replaceAll(/[^а-яА-я\-]/g, '');
+        this.surname = s.substr(0, 30);
+      },
+      name: function() {
+        this.nameMsg = '';
+        n = this.name;
+        n = n.replaceAll(/[^а-яА-я\-]/g, '');
+        this.name = n.substr(0, 30);
+      },
+      secondname: function() {
+        this.secondnameMsg = '';
+        sn = this.secondname;
+        sn = sn.replaceAll(/[^а-яА-я\-]/g, '');
+        this.secondname = sn.substr(0, 30);
       }
     },
     computed: {
-      codeDisabled: function() {
-        return !this.phone || this.phone.length != 13;
-      },
-      loginDisabled: function() {
-        return !this.code || this.code.length != 4;
+      registerDisabled: function() {
+        return !(this.phone && this.phone.length == 13 && this.surname && this.name && this.secondname);
       }
     },
     created() {
