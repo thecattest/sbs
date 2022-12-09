@@ -37,12 +37,16 @@ body {
   'opsz' 48
 }
 
+.calendar-week {
+  padding: 3px 0;
+}
+
 .day {
   font-size: 18px;
   cursor: default;
   padding: 5px;
   width: 46px;
-  height: 51px;
+  height: 48px;
   border-radius: 12px;
 }
 
@@ -109,8 +113,9 @@ body {
 .calendar-month-step:hover {color: initial;}
 
 .exam-list-header{
-  font-size: 22px;
-  font-weight: bold;
+  /* font-size: 22px;
+  font-weight: bold; */
+  margin: 0;
 }
 
 .exam-list-day.msg {
@@ -142,7 +147,7 @@ body {
 }
 
 .exam-list-body {
-  margin: 0 10px;
+  /* margin: 0 10px; */
 }
 
 .tag {
@@ -281,7 +286,7 @@ thead td {
   .card-invisible { display: none }
 
   .side-container {
-    order: 0;
+    order: 1;
     margin-right: 10px;
   }
 

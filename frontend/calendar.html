@@ -34,15 +34,15 @@
       <div class="d-flex justify-content-center" v-if="!loading" id="content">
         <div class="card card-invisible"></div>
         <div class="main-container d-flex flex-column">
-          <calendar :select="selectDay" @step="step" :year="year" :month="month"
-            :days="filteredDays" :constants="constants" :admin="isAdmin" :client="isClient"
-          ></calendar>
           <exam-list
             :enroll="enroll" :admin="isAdmin" :client="isClient"
             :day="activeDay" :exams="activeExams" :open-participants="openParticipants"
             :prepare-for-deletion="prepareForDeletion"
             :month="month" :constants="constants"
           ></exam-list>
+          <calendar :select="selectDay" @step="step" :year="year" :month="month"
+            :days="filteredDays" :constants="constants" :admin="isAdmin" :client="isClient"
+          ></calendar>
         </div>
         <div class="side-container">
           <filters
@@ -639,8 +639,8 @@
       }
     },
     template: `
-      <div class="exam-list card">
-        <div class="exam-list-header d-flex align-items-center justify-content-between">
+      <div class="exam-list card mb-3">
+        <h4 class="exam-list-header d-flex align-items-center justify-content-between">
           Экзамены
           <button v-if="admin"
             data-bs-toggle="modal" data-bs-target="#newExamModal"
@@ -648,8 +648,8 @@
           >
             Добавить <span class="material-symbols-outlined icon-btn ms-1 mt-0">add</span>
           </button>
-        </div>
-        <div class="exam-list-day" :class="{'msg m-2 mt-3': day === -1}">
+        </h4>
+        <div class="exam-list-day" :class="{'msg mt-3': day === -1}">
           <template v-if="day !== -1">
             {{ day }} {{ months[month] }}
           </template>
